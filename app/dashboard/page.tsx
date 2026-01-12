@@ -12,7 +12,13 @@ export default async function DashboardPage() {
     }
 
     const user = await currentUser();
-
+    const displayName =
+    user?.firstName ??
+    user?.lastName ??
+    user?.fullName ??
+    user?.emailAddresses?.[0]?.emailAddress?.split('@')[0] ??
+    'Player';
+    
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
             {/* Navigation */}
@@ -34,7 +40,7 @@ export default async function DashboardPage() {
                     {/* Welcome Banner */}
                     <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 rounded-2xl p-8 mb-8 border border-purple-700/30">
                         <h1 className="text-3xl font-bold mb-2">
-                            Welcome back, <span className="text-purple-300">{user?.lastName}</span>! 🎮
+                            Welcome back, <span className="text-purple-300">{displayName}</span>! 🎮
                         </h1>
                         <p className="text-gray-300">
                             Your personal game tracking dashboard
