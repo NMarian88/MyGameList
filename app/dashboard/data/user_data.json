@@ -1,0 +1,57 @@
+{
+  "id": "user_12345",
+  "games": [
+    {
+      "gameId": "1234",
+      "status": "completed",
+      "reviewScore": 10,
+      "reviewText": "Amazing game!",
+      "reviewedAt": "2024-05-20T15:30:00Z",
+      "completedAt": "2024-05-20T15:30:00Z"
+    },
+    {
+      "gameId": "2345",
+      "status": "wishlist",
+      "reviewScore": 10,
+      "reviewText": "Amazing game!",
+      "reviewedAt": "2024-05-20T15:30:00Z"
+    },
+    {
+      "gameId": "3456",
+      "status": "playing",
+      "reviewScore": 10,
+      "reviewText": "Amazing game!",
+      "reviewedAt": "2024-05-20T15:30:00Z",
+      "completedAt": "2024-05-20T15:30:00Z"
+    },
+    {
+      "gameId": "6789",
+      "status": "completed",
+      "reviewScore": 0,
+      "reviewText": "Amazing game!",
+      "reviewedAt": "2024-05-20T15:30:00Z",
+      "completedAt": "2024-05-20T15:30:00Z"
+    },
+    {
+      "gameId": "9012",
+      "status": "completed",
+      "reviewScore": 10,
+      "reviewText": "Amazing game!",
+      "reviewedAt": "2024-05-20T15:30:00Z",
+      "completedAt": "2024-05-20T15:30:00Z"
+    },
+    {
+      "gameId": "6969",
+      "status": "completed",
+      "reviewScore": 10,
+      "reviewText": "Amazing game!",
+      "reviewedAt": "2024-05-20T15:30:00Z",
+      "completedAt": "2024-05-20T15:30:00Z"
+    }
+  ],
+"stats": {
+  "totalGames": 1,
+  "playing": 0,
+  "completed": 1
+}
+}
