@@ -13,8 +13,17 @@ export async function GET(request: Request) {
     const identifier = gameId || gameSlug;
 
     if (identifier) {
-        // First, check if game exists locally (by ID)
-        const localGame = (games as Record<string, Game>)[identifier];
+        // First, check if game exists locally (by ID or slug)
+        const gamesRecord = games as Record<string, Game>;
+        let localGame: Game | undefined = gamesRecord[identifier]; // Check by ID
+        
+        if (!localGame) {
+            // Check by slug if not found by ID
+            localGame = Object.values(gamesRecord).find(game => 
+                game.slug === identifier || game.name?.toLowerCase().replace(/\s+/g, '-') === identifier.toLowerCase()
+            );
+        }
+        
         if (localGame) {
             return NextResponse.json(localGame);
         }
@@ -26,17 +35,23 @@ export async function GET(request: Request) {
             const gameFromApi = await getGameDetails(isNumeric ? Number(identifier) : identifier);
             
             // Optionally save to local storage for future use (using game ID as key)
-            const gamesPath = path.join(process.cwd(), "app/dashboard/data/games.json");
-            const fileContent = await fs.readFile(gamesPath, "utf-8");
-            const currentGames = JSON.parse(fileContent) as Record<string, Game>;
-            currentGames[String(gameFromApi.id)] = gameFromApi;
-            await fs.writeFile(gamesPath, JSON.stringify(currentGames, null, 2));
+            try {
+                const gamesPath = path.join(process.cwd(), "app/dashboard/data/games.json");
+                const fileContent = await fs.readFile(gamesPath, "utf-8");
+                const currentGames = fileContent ? JSON.parse(fileContent) as Record<string, Game> : {};
+                currentGames[String(gameFromApi.id)] = gameFromApi;
+                await fs.writeFile(gamesPath, JSON.stringify(currentGames, null, 2));
+            } catch (saveError) {
+                // Log but don't fail if we can't save locally
+                console.warn("Could not save game locally:", saveError);
+            }
             
             return NextResponse.json(gameFromApi);
         } catch (error) {
             console.error("Error fetching game from RAWG API:", error);
+            const errorMessage = error instanceof Error ? error.message : "Game not found";
             return NextResponse.json(
-                { error: "Game not found" },
+                { error: errorMessage },
                 { status: 404 }
             );
         }

@@ -46,7 +46,16 @@ export async function getGameDetails(idOrSlug: number | string): Promise<Game> {
         `${BASE_URL}/games/${idOrSlug}?key=${RAWG_API_KEY}`
     );
     if(!response.ok){
-        throw new Error('Failed to fetch game');
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch game: ${response.status} ${response.statusText} - ${errorText}`);
     }
-    return response.json();
+    const text = await response.text();
+    if (!text) {
+        throw new Error('Empty response from RAWG API');
+    }
+    try {
+        return JSON.parse(text);
+    } catch (error) {
+        throw new Error(`Invalid JSON response from RAWG API: ${text.substring(0, 100)}`);
+    }
 }

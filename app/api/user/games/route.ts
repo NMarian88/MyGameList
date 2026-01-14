@@ -41,18 +41,38 @@ export async function POST(request: Request) {
             currentUserData.games = [];
         }
 
-        // Find existing game or create new entry
-        const existingIndex = currentUserData.games.findIndex((g) => g.gameId === gameId);
+        // Fetch the game details to get both ID and slug
+        let gameDetails;
+        try {
+            const response = await fetch(`${request.url.split('/api')[0]}/api/games?id=${gameId}`);
+            if (response.ok) {
+                gameDetails = await response.json();
+            }
+        } catch (error) {
+            console.warn("Could not fetch game details:", error);
+        }
+
+        // Find existing game by gameId, or by matching ID/slug if we have game details
+        let existingIndex = currentUserData.games.findIndex((g) => g.gameId === gameId);
+        
+        if (existingIndex < 0 && gameDetails) {
+            // Check if we have the same game stored with a different identifier (ID vs slug)
+            existingIndex = currentUserData.games.findIndex((g) => 
+                g.gameId === String(gameDetails.id) || 
+                g.gameId === gameDetails.slug ||
+                String(g.gameId) === String(gameDetails.id)
+            );
+        }
         
         const gameData: UserGameData = {
-            gameId,
+            gameId: gameDetails ? String(gameDetails.id) : gameId, // Always use numeric ID if available
             status,
             ...(reviews && { reviews }),
             ...(status === "completed" && { completedAt: completedAt || new Date().toISOString() })
         };
 
         if (existingIndex >= 0) {
-            // Update existing entry
+            // Update existing entry (use the numeric ID if we have it)
             currentUserData.games[existingIndex] = gameData;
         } else {
             // Add new entry

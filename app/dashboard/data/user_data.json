@@ -14,15 +14,16 @@
       "completedAt": "2024-05-20T15:30:00Z"
     },
     {
-      "gameId": "persona-5",
-      "status": "wishlist",
+      "gameId": "49",
+      "status": "completed",
       "reviews": [
         {
           "reviewScore": 10,
           "reviewText": "Amazing game!",
           "reviewedAt": "2024-05-20T15:30:00Z"
         }
-      ]
+      ],
+      "completedAt": "2026-01-14T18:45:43.841Z"
     },
     {
       "gameId": "persona-3-reload",
@@ -131,8 +132,8 @@
     }
   ],
   "stats": {
-    "totalGames": 6,
+    "totalGames": 11,
     "playing": 1,
-    "completed": 4
+    "completed": 7
   }
 }
