@@ -1,19 +1,56 @@
 import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
-import userData from "../../../dashboard/data/user_data.json";
+import { auth } from "@clerk/nextjs/server";
 import { UserData, UserGameData } from "../../../../lib/types";
 
-export async function GET() {
-    const userGames = (userData as UserData).games || [];
-    return NextResponse.json({ 
-        games: userGames,
-        stats: (userData as UserData).stats
-    });
+type MultiUserData = {
+    [userId: string]: UserData;
+};
+
+export async function GET(request: Request) {
+    try {
+        const { userId } = await auth();
+
+        if (!userId) {
+            return NextResponse.json(
+                { error: "Unauthorized - user not authenticated" },
+                { status: 401 }
+            );
+        }
+
+        // Read user data file
+        const userDataPath = path.join(process.cwd(), "app/dashboard/data/user_data.json");
+        const fileContent = await fs.readFile(userDataPath, "utf-8");
+        const allUserData = JSON.parse(fileContent) as MultiUserData;
+
+        // Get or initialize user data
+        const userData = allUserData[userId] || { games: [], stats: { totalGames: 0, playing: 0, completed: 0, wishlist: 0, dropped: 0 } };
+
+        return NextResponse.json({ 
+            games: userData.games || [],
+            stats: userData.stats
+        });
+    } catch (error) {
+        console.error("Error fetching user data:", error);
+        return NextResponse.json(
+            { error: "Failed to fetch user data" },
+            { status: 500 }
+        );
+    }
 }
 
 export async function POST(request: Request) {
     try {
+        const { userId } = await auth();
+
+        if (!userId) {
+            return NextResponse.json(
+                { error: "Unauthorized - user not authenticated" },
+                { status: 401 }
+            );
+        }
+
         const body = await request.json();
         const { gameId, status, reviews, completedAt } = body as Partial<UserGameData>;
 
@@ -34,7 +71,17 @@ export async function POST(request: Request) {
         // Read current user data
         const userDataPath = path.join(process.cwd(), "app/dashboard/data/user_data.json");
         const fileContent = await fs.readFile(userDataPath, "utf-8");
-        const currentUserData = JSON.parse(fileContent) as UserData;
+        const allUserData = JSON.parse(fileContent) as MultiUserData;
+
+        // Get or initialize user data for this specific user
+        if (!allUserData[userId]) {
+            allUserData[userId] = {
+                games: [],
+                stats: { totalGames: 0, playing: 0, completed: 0, wishlist: 0, dropped: 0 }
+            };
+        }
+
+        const currentUserData = allUserData[userId];
 
         // Initialize games array if it doesn't exist
         if (!currentUserData.games) {
@@ -88,13 +135,17 @@ export async function POST(request: Request) {
             dropped: currentUserData.games.filter(g => g.status === "dropped").length
         };
 
+        // Update the user's data in the multi-user structure
+        allUserData[userId] = currentUserData;
+
         // Write updated data back to file
-        await fs.writeFile(userDataPath, JSON.stringify(currentUserData, null, 2));
+        await fs.writeFile(userDataPath, JSON.stringify(allUserData, null, 2));
 
         return NextResponse.json({ 
             success: true, 
             message: `Game ${existingIndex >= 0 ? 'updated' : 'added'} with status: ${status}`,
             gameId,
+            userId,
             stats: currentUserData.stats
         });
 

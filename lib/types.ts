@@ -26,8 +26,7 @@ export interface Game{
     [key: string]: unknown; // Allow additional RAWG API fields
 }
 
-export interface UserData{
-    id: string;
+export interface UserData {
     games: UserGameData[];
     stats: {
         totalGames: number;

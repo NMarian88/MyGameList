@@ -1,140 +1,141 @@
 {
-  "id": "user_12345",
-  "games": [
-    {
-      "gameId": "1234",
-      "status": "completed",
-      "reviews": [
-        {
-          "reviewScore": 10,
-          "reviewText": "Amazing game!",
-          "reviewedAt": "2024-05-20T15:30:00Z"
-        }
-      ],
-      "completedAt": "2024-05-20T15:30:00Z"
-    },
-    {
-      "gameId": "49",
-      "status": "completed",
-      "reviews": [
-        {
-          "reviewScore": 10,
-          "reviewText": "Amazing game!",
-          "reviewedAt": "2024-05-20T15:30:00Z"
-        }
-      ],
-      "completedAt": "2026-01-14T19:01:40.632Z"
-    },
-    {
-      "gameId": "persona-3-reload",
-      "status": "wishlist",
-      "reviews": [
-        {
-          "reviewScore": 10,
-          "reviewText": "Amazing game!",
-          "reviewedAt": "2024-05-20T15:30:00Z"
-        }
-      ]
-    },
-    {
-      "gameId": "xcom-2",
-      "status": "wishlist",
-      "reviews": [
-        {
-          "reviewScore": 10,
-          "reviewText": "Amazing game!",
-          "reviewedAt": "2024-05-20T15:30:00Z"
-        }
-      ]
-    },
-    {
-      "gameId": "darkest-dungeon",
-      "status": "wishlist",
-      "reviews": [
-        {
-          "reviewScore": 10,
-          "reviewText": "Amazing game!",
-          "reviewedAt": "2024-05-20T15:30:00Z"
-        }
-      ]
-    },
-    {
-      "gameId": "3456",
-      "status": "playing",
-      "reviews": [
-        {
-          "reviewScore": 10,
-          "reviewText": "Amazing game!",
-          "reviewedAt": "2024-05-20T15:30:00Z"
-        }
-      ],
-      "completedAt": "2024-05-20T15:30:00Z"
-    },
-    {
-      "gameId": "6789",
-      "status": "completed",
-      "reviews": [
-        {
-          "reviewScore": 0,
-          "reviewText": "Amazing game!",
-          "reviewedAt": "2024-05-20T15:30:00Z"
-        }
-      ],
-      "completedAt": "2024-05-20T15:30:00Z"
-    },
-    {
-      "gameId": "9012",
-      "status": "completed",
-      "reviews": [
-        {
-          "reviewScore": 10,
-          "reviewText": "Amazing game!",
-          "reviewedAt": "2024-05-20T15:30:00Z"
-        }
-      ],
-      "completedAt": "2024-05-20T15:30:00Z"
-    },
-    {
-      "gameId": "grand-theft-auto-v",
-      "status": "completed",
-      "reviews": [
-        {
-          "reviewScore": 4,
-          "reviewText": "Amazing game!",
-          "reviewedAt": "2024-05-20T15:30:00Z"
-        }
-      ],
-      "completedAt": "2024-05-20T15:30:00Z"
-    },
-    {
-      "gameId": "41494",
-      "status": "completed",
-      "reviews": [
-        {
-          "reviewScore": 10,
-          "reviewText": "Amazing game!",
-          "reviewedAt": "2024-05-20T15:30:00Z"
-        }
-      ],
-      "completedAt": "2024-05-20T15:30:00Z"
-    },
-    {
-      "gameId": "10297",
-      "status": "dropped",
-      "reviews": [
-        {
-          "reviewScore": 10,
-          "reviewText": "Amazing game!",
-          "reviewedAt": "2024-05-20T15:30:00Z"
-        }
-      ]
+  "user_38AmlAqHWjF8i1lheLeJnVI47Ay": {
+    "games": [
+      {
+        "gameId": "1234",
+        "status": "dropped",
+        "reviews": [
+          {
+            "reviewScore": 1,
+            "reviewText": "HORRIBLE GAME",
+            "reviewedAt": "2026-01-16T18:28:04.414Z"
+          }
+        ]
+      },
+      {
+        "gameId": "49",
+        "status": "completed",
+        "reviews": [
+          {
+            "reviewScore": 10,
+            "reviewText": "Amazing game!",
+            "reviewedAt": "2026-01-16T18:18:00.526Z"
+          }
+        ],
+        "completedAt": "2026-01-16T18:18:00.597Z"
+      },
+      {
+        "gameId": "962676",
+        "status": "completed",
+        "reviews": [
+          {
+            "reviewScore": 10,
+            "reviewText": "Amazing game!",
+            "reviewedAt": "2024-05-20T15:30:00Z"
+          }
+        ],
+        "completedAt": "2026-01-16T18:08:30.751Z"
+      },
+      {
+        "gameId": "xcom-2",
+        "status": "wishlist",
+        "reviews": [
+          {
+            "reviewScore": 10,
+            "reviewText": "Amazing game!",
+            "reviewedAt": "2024-05-20T15:30:00Z"
+          }
+        ]
+      },
+      {
+        "gameId": "darkest-dungeon",
+        "status": "wishlist",
+        "reviews": [
+          {
+            "reviewScore": 10,
+            "reviewText": "Amazing game!",
+            "reviewedAt": "2024-05-20T15:30:00Z"
+          }
+        ]
+      },
+      {
+        "gameId": "3456",
+        "status": "playing",
+        "reviews": [
+          {
+            "reviewScore": 10,
+            "reviewText": "Amazing game!",
+            "reviewedAt": "2024-05-20T15:30:00Z"
+          }
+        ],
+        "completedAt": "2024-05-20T15:30:00Z"
+      },
+      {
+        "gameId": "6789",
+        "status": "completed",
+        "reviews": [
+          {
+            "reviewScore": 0,
+            "reviewText": "Amazing game!",
+            "reviewedAt": "2024-05-20T15:30:00Z"
+          }
+        ],
+        "completedAt": "2024-05-20T15:30:00Z"
+      },
+      {
+        "gameId": "9012",
+        "status": "completed",
+        "reviews": [
+          {
+            "reviewScore": 10,
+            "reviewText": "Amazing game!",
+            "reviewedAt": "2024-05-20T15:30:00Z"
+          }
+        ],
+        "completedAt": "2024-05-20T15:30:00Z"
+      },
+      {
+        "gameId": "grand-theft-auto-v",
+        "status": "completed",
+        "reviews": [
+          {
+            "reviewScore": 4,
+            "reviewText": "Amazing game!",
+            "reviewedAt": "2024-05-20T15:30:00Z"
+          }
+        ],
+        "completedAt": "2024-05-20T15:30:00Z"
+      },
+      {
+        "gameId": "41494",
+        "status": "completed",
+        "reviews": [
+          {
+            "reviewScore": 10,
+            "reviewText": "Amazing game!",
+            "reviewedAt": "2024-05-20T15:30:00Z"
+          }
+        ],
+        "completedAt": "2024-05-20T15:30:00Z"
+      },
+      {
+        "gameId": "10297",
+        "status": "dropped",
+        "reviews": [
+          {
+            "reviewScore": 10,
+            "reviewText": "Amazing game!",
+            "reviewedAt": "2024-05-20T15:30:00Z"
+          }
+        ]
+      }
+    ],
+    "stats": {
+      "totalGames": 11,
+      "playing": 1,
+      "completed": 6,
+      "wishlist": 2,
+      "dropped": 2
     }
-  ],
-  "stats": {
-    "totalGames": 11,
-    "playing": 1,
-    "completed": 6,
-    "wishlist": 3,
-    "dropped": 1
   }
 }

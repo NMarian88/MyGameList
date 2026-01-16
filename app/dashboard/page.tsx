@@ -1,14 +1,14 @@
-import { Game, UserGameData } from '@/lib/types';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
 import { UserButton } from '@clerk/nextjs';
+import { Game, UserGameData } from '@/lib/types';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import TabbedPanels from './components/TabbedPanels';
-import { GenreTrackerWrapper } from './components/GenreTrackerWrapper';
-import quips from './data/quip.json';
 import { calculateGenreStats, calculateGenreStatsByScore } from '@/lib/utils';
-import userData from './data/user_data.json';
+import { GenreTrackerWrapper } from './components/GenreTrackerWrapper';
+import TabbedPanels from './components/TabbedPanels';
 import gamesData from './data/games.json';
+import quips from './data/quip.json';
+import { headers } from 'next/headers';
 
 const quip = quips[Math.floor(Math.random() * quips.length)];
 
@@ -20,6 +20,34 @@ export default async function DashboardPage() {
         redirect('/sign-in');
     }
 
+    // Fetch user data from API
+    const headersList = await headers();
+    const host = headersList.get('host') || 'localhost:3000';
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    
+    const response = await fetch(`${protocol}://${host}/api/user/games`, {
+        headers: {
+            Cookie: headersList.get('cookie') || '',
+        },
+        cache: 'no-store',
+    });
+
+    let userGames: UserGameData[] = [];
+    let stats = {
+        totalGames: 0,
+        playing: 0,
+        completed: 0,
+        wishlist: 0,
+        dropped: 0
+    };
+
+    if (response.ok) {
+        const data = await response.json();
+        userGames = data.games || [];
+        stats = data.stats || stats;
+    }
+
+    // Get users display name
     const user = await currentUser();
     const displayName =
     user?.firstName ??
@@ -29,7 +57,6 @@ export default async function DashboardPage() {
     'Player';
 
     // Get user's games and calculate genre stats
-    const userGames = (userData.games || []) as UserGameData[];
     const games = gamesData as Record<string, Game>;
     const userGameDetails = userGames
         .map(ug => games[ug.gameId])
@@ -38,9 +65,9 @@ export default async function DashboardPage() {
     const genreStatsByScore = calculateGenreStatsByScore(userGameDetails, userGames);
 
     // Get stats from user data
-    const totalGames = userData.stats?.totalGames || 0;
-    const playingCount = userData.stats?.playing || 0;
-    const completedCount = userData.stats?.completed || 0;
+    const totalGames = stats.totalGames || 0;
+    const playingCount = stats.playing || 0;
+    const completedCount = stats.completed || 0;
     
     // Calculate average rating from all reviews
     const allReviews = userGames.flatMap(g => g.reviews || []);

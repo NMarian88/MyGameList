@@ -19,6 +19,176 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
     const [currentStatusValue, setCurrentStatusValue] = useState(userGameData?.status);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
+    // Score editing state
+    const [isEditingScore, setIsEditingScore] = useState(false);
+    const [isUpdatingScore, setIsUpdatingScore] = useState(false);
+    const [scoreInput, setScoreInput] = useState<number | undefined>(userGameData?.reviews?.[userGameData.reviews.length - 1]?.reviewScore);
+    const [localLatestReview, setLocalLatestReview] = useState(userGameData?.reviews?.[userGameData.reviews.length - 1]);
+
+    // Review editing state
+    const [isEditingReview, setIsEditingReview] = useState(false);
+    const [isUpdatingReview, setIsUpdatingReview] = useState(false);
+    const [reviewInput, setReviewInput] = useState<string | undefined>(userGameData?.reviews?.[userGameData.reviews.length - 1]?.reviewText);
+    const reviewRef = useRef<HTMLTextAreaElement | null>(null);
+
+    // Sync local latest review, score input and review input when incoming prop changes
+    useEffect(() => {
+        const latest = userGameData?.reviews?.[userGameData.reviews.length - 1];
+        setLocalLatestReview(latest);
+        setScoreInput(latest?.reviewScore);
+        setReviewInput(latest?.reviewText);
+    }, [userGameData?.reviews]);
+
+    // Focus textarea when entering edit mode
+    useEffect(() => {
+        if (isEditingReview && reviewRef.current) {
+            try {
+                reviewRef.current.focus();
+                reviewRef.current.select?.();
+            } catch {}
+        }
+    }, [isEditingReview]);
+
+    const inputRef = useRef<HTMLInputElement | null>(null);
+
+    // Focus input when entering edit mode
+    useEffect(() => {
+        if (isEditingScore && inputRef.current) {
+            try {
+                inputRef.current.focus();
+                inputRef.current.select?.();
+            } catch {}
+        }
+    }, [isEditingScore]);
+
+    const handleSaveScore = async (newScore: number) => {
+        // If there's no change, just close editor
+        if (localLatestReview?.reviewScore === newScore) {
+            setIsEditingScore(false);
+            return;
+        }
+
+        setIsUpdatingScore(true);
+        try {
+            // Prepare new reviews array: update last review if exists, otherwise append a new one
+            const currentReviews = Array.isArray(userGameData?.reviews) ? [...userGameData!.reviews] : [];
+            const now = new Date().toISOString();
+            if (currentReviews.length > 0) {
+                const updated = { ...currentReviews[currentReviews.length - 1], reviewScore: newScore, reviewedAt: now };
+                currentReviews[currentReviews.length - 1] = updated;
+            } else {
+                currentReviews.push({ reviewScore: newScore, reviewedAt: now });
+            }
+
+            const response = await fetch('/api/user/games', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    gameId: String(game.id),
+                    status: userGameData?.status || 'completed',
+                    reviews: currentReviews
+                }),
+            });
+
+            if (!response.ok) throw new Error('Failed to update score');
+
+            // Optimistically update local state for immediate UI feedback
+            setLocalLatestReview(currentReviews[currentReviews.length - 1]);
+            if (onStatusChange) onStatusChange();
+            setIsEditingScore(false);
+        } catch (error) {
+            console.error('Error updating score:', error);
+            alert('Failed to update score. Please try again.');
+        } finally {
+            setIsUpdatingScore(false);
+        }
+    };
+
+    // Cancel editing and revert input to last known score
+    const handleCancelEditing = () => {
+        setIsEditingScore(false);
+        setScoreInput(localLatestReview?.reviewScore);
+    };
+
+    // Called on blur to either cancel (if empty) or save changes
+    const handleBlurSave = () => {
+        if (scoreInput === undefined) {
+            handleCancelEditing();
+            return;
+        }
+        // If unchanged, simply close the editor
+        if (localLatestReview?.reviewScore === scoreInput) {
+            setIsEditingScore(false);
+            return;
+        }
+
+        if (!isUpdatingScore) {
+            handleSaveScore(Math.max(0, Math.min(10, Math.round(scoreInput))));
+        }
+    };
+
+    // Review handlers
+    const handleCancelReviewEditing = () => {
+        setIsEditingReview(false);
+        setReviewInput(localLatestReview?.reviewText);
+    };
+
+    const handleSaveReview = async (newText: string) => {
+        // If unchanged, just close editor
+        if (localLatestReview?.reviewText === newText) {
+            setIsEditingReview(false);
+            return;
+        }
+
+        setIsUpdatingReview(true);
+        try {
+            const currentReviews = Array.isArray(userGameData?.reviews) ? [...userGameData!.reviews] : [];
+            const now = new Date().toISOString();
+            if (currentReviews.length > 0) {
+                const updated = { ...currentReviews[currentReviews.length - 1], reviewText: newText, reviewedAt: now };
+                currentReviews[currentReviews.length - 1] = updated;
+            } else {
+                currentReviews.push({ reviewText: newText, reviewedAt: now });
+            }
+
+            const response = await fetch('/api/user/games', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    gameId: String(game.id),
+                    status: userGameData?.status || 'completed',
+                    reviews: currentReviews
+                }),
+            });
+
+            if (!response.ok) throw new Error('Failed to update review');
+
+            setLocalLatestReview(currentReviews[currentReviews.length - 1]);
+            if (onStatusChange) onStatusChange();
+            setIsEditingReview(false);
+        } catch (error) {
+            console.error('Error updating review:', error);
+            alert('Failed to update review. Please try again.');
+        } finally {
+            setIsUpdatingReview(false);
+        }
+    };
+
+    const handleBlurSaveReview = () => {
+        const trimmed = reviewInput?.trim() ?? '';
+        if (trimmed === '') {
+            handleCancelReviewEditing();
+            return;
+        }
+        if (localLatestReview?.reviewText === trimmed) {
+            setIsEditingReview(false);
+            return;
+        }
+        if (!isUpdatingReview) {
+            handleSaveReview(trimmed);
+        }
+    };
+
     // Update local status when userGameData changes
     useEffect(() => {
         setCurrentStatusValue(userGameData?.status);
@@ -110,7 +280,13 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
 
     const currentStatus = statusOptions.find(opt => opt.value === currentStatusValue) || statusOptions[0];
 
-    const latestReview = userGameData?.reviews?.[userGameData.reviews.length - 1];
+    const getScoreClass = (score?: number) => {
+        if (score == null) return 'bg-black/50';
+        if (score >= 8) return 'bg-green-600/50';
+        if (score >= 5) return 'bg-yellow-500/50';
+        return 'bg-red-600/50';
+    };
+
     const genres = game.genres?.map(g => g.name).join(', ') || 'N/A';
     const platforms = game.platforms?.map(p => p.platform.name).join(', ') || 'N/A';
 
@@ -182,7 +358,7 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                                     
                                     {/* Status Dropdown */}
                                     {isStatusDropdownOpen && (
-                                        <div className="absolute top-full left-0 mt-1 bg-gray-800 border border-gray-700 rounded shadow-lg z-10 min-w-[120px]">
+                                        <div className="absolute top-full left-0 mt-1 bg-gray-800 border border-gray-700 rounded shadow-lg z-10 min-w-30">
                                             {statusOptions.map((option) => (
                                                 <button
                                                     key={option.value}
@@ -199,14 +375,67 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                                     )}
                                 </div>
                             </div>
-                            {latestReview?.reviewScore !== undefined && latestReview?.reviewScore !== null && (
+                            { (localLatestReview?.reviewScore !== undefined && localLatestReview?.reviewScore !== null) || isEditingScore ? (
                                 <div className="flex items-center gap-2">
                                     <span className="text-gray-400">Your Score:</span>
-                                    <span className="px-3 py-1 bg-green-600 text-white rounded text-sm font-medium">
-                                        {latestReview.reviewScore}/10
-                                    </span>
+
+                                    {/* Display mode */}
+                                    {!isEditingScore && localLatestReview?.reviewScore !== undefined && (
+                                        <div className="flex items-center gap-2">
+                                            <span
+                                                onClick={() => setIsEditingScore(true)}
+                                                role="button"
+                                                tabIndex={0}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setIsEditingScore(true); e.preventDefault(); } }}
+                                                className={`px-3 py-1 ${getScoreClass(localLatestReview.reviewScore)} text-white rounded text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+                                            >
+                                                {localLatestReview.reviewScore}/10
+                                            </span>
+                                            <button
+                                                onClick={() => setIsEditingScore(true)}
+                                                className="text-sm text-gray-300 hover:text-white px-2 py-1 rounded bg-gray-800/40 border border-gray-700"
+                                            >
+                                                Edit
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* Edit mode */}
+                                    {isEditingScore && (
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                ref={inputRef}
+                                                type="number"
+                                                min={0}
+                                                max={10}
+                                                step={1}
+                                                value={scoreInput ?? ''}
+                                                onChange={(e) => setScoreInput(e.target.value === '' ? undefined : Number(e.target.value))}
+                                                onBlur={() => {
+                                                    if (scoreInput === undefined) {
+                                                        handleCancelEditing();
+                                                    } else {
+                                                        handleBlurSave();
+                                                    }
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if ((e.key === 'Enter' || e.key === 'NumpadEnter') && scoreInput !== undefined) {
+                                                        handleSaveScore(Math.max(0, Math.min(10, Math.round(scoreInput))))
+                                                    } else if (e.key === 'Escape') {
+                                                        handleCancelEditing();
+                                                    }
+                                                }}
+                                                disabled={isUpdatingScore}
+                                                className="w-20 px-2 py-1 rounded bg-gray-800 border border-gray-700 text-white text-sm"
+                                                aria-label="Edit score"
+                                            />
+                                            {isUpdatingScore && (
+                                                <span className="text-sm text-gray-300">Saving...</span>
+                                            )}
+                                        </div>
+                                    )} 
                                 </div>
-                            )}
+                            ) : null }
                         </div>
                     )}
 
@@ -253,13 +482,72 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                     )}
 
                     {/* User Review */}
-                    {latestReview?.reviewText && (
+                    {(localLatestReview?.reviewText || isEditingReview) && (
                         <div className="pt-4 border-t border-gray-700">
-                            <h3 className="text-lg font-semibold text-white mb-3">Your Review</h3>
-                            <p className="text-gray-300 italic">&quot;{latestReview.reviewText}&quot;</p>
-                            {latestReview.reviewedAt && (
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-semibold text-white mb-3">Your Review</h3>
+                                {!isEditingReview && (
+                                    <button
+                                        onClick={() => { setIsEditingReview(true); setReviewInput(localLatestReview?.reviewText ?? ''); }}
+                                        className="text-sm text-gray-300 hover:text-white px-2 py-1 rounded bg-gray-800/40 border border-gray-700"
+                                    >
+                                        Edit
+                                    </button>
+                                )}
+                            </div>
+
+                            {!isEditingReview && localLatestReview?.reviewText && (
+                                <p
+                                    className="text-gray-300 italic cursor-pointer"
+                                    onClick={() => { setIsEditingReview(true); setReviewInput(localLatestReview.reviewText ?? ''); }}
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setIsEditingReview(true); setReviewInput(localLatestReview.reviewText ?? ''); } }}
+                                >
+                                    &quot;{localLatestReview.reviewText}&quot;
+                                </p>
+                            )}
+
+                            {isEditingReview && (
+                                <div>
+                                    <textarea
+                                        ref={reviewRef}
+                                        rows={6}
+                                        value={reviewInput ?? ''}
+                                        onChange={(e) => setReviewInput(e.target.value)}
+                                        onBlur={() => {
+                                            const trimmed = reviewInput?.trim() ?? '';
+                                            if (trimmed === '') {
+                                                handleCancelReviewEditing();
+                                            } else {
+                                                handleBlurSaveReview();
+                                            }
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                                                const trimmed = reviewInput?.trim() ?? '';
+                                                if (trimmed !== '') handleSaveReview(trimmed);
+                                            } else if (e.key === 'Escape') {
+                                                handleCancelReviewEditing();
+                                            }
+                                        }}
+                                        disabled={isUpdatingReview}
+                                        className="w-full px-3 py-2 rounded bg-gray-800 border border-gray-700 text-white text-sm resize-y"
+                                        aria-label="Edit review"
+                                    />
+                                    <div className="mt-2 flex items-center gap-2">
+                                        {isUpdatingReview && <span className="text-sm text-gray-300">Saving...</span>}
+                                        <span className="text-sm text-gray-500">Press Ctrl/Cmd+Enter to save, Esc to cancel</span>
+                                    </div>
+
+                                </div>
+                            )}
+                            {!isEditingReview && !localLatestReview?.reviewText && (
+                                <p className="text-sm text-gray-400">No review yet. Click Edit to add one.</p>
+                            )}
+                            {localLatestReview?.reviewedAt && (
                                 <p className="text-sm text-gray-500 mt-2">
-                                    Reviewed on {new Date(latestReview.reviewedAt).toLocaleDateString()}
+                                    Reviewed on {new Date(localLatestReview.reviewedAt).toLocaleDateString()}
                                 </p>
                             )}
                         </div>

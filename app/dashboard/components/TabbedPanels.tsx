@@ -114,6 +114,33 @@ export default function TabbedPanels() {
             .catch(console.error);
     }, []);
 
+    const refreshGames = async () => {
+        try {
+            const response = await fetch("/api/user/games");
+            const userData = await response.json();
+            const userGames = userData.games || [];
+            
+            const gamesWithDetails = await Promise.all(
+                userGames.map(async (userGame: UserGameData) => {
+                    try {
+                        const response = await fetch(`/api/games?id=${userGame.gameId}`);
+                        if (!response.ok) return null;
+                        const game = await response.json();
+                        return { ...userGame, game };
+                    } catch (error) {
+                        console.error(`Error fetching game ${userGame.gameId}:`, error);
+                        return null;
+                    }
+                })
+            );
+            
+            const validGames = gamesWithDetails.filter((g): g is UserGameWithDetails => g !== null);
+            setAllGames(validGames);
+        } catch (error) {
+            console.error('Error refreshing games:', error);
+        }
+    };
+
     const gamesByTab: Record<Tab, UserGameWithDetails[]> = {
         All: allGames,
         Completed: allGames.filter(g => g.status === "completed"),
@@ -166,6 +193,7 @@ export default function TabbedPanels() {
                     userGameData={selectedGame}
                     isOpen={isModalOpen}
                     onClose={closeModal}
+                    onStatusChange={refreshGames}  // Add this
                 />
             )}
         </div>
