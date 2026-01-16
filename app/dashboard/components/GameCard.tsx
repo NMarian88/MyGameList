@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import { Flag, Play, Heart, Skull } from 'lucide-react';
 
-type ViewMode = 'cards' | 'tiles' | 'details';
+type ViewMode = 'cards' | 'details';
 type status = 'completed' | 'playing' | 'wishlist' | 'dropped';
 
 interface Props {
@@ -20,7 +20,7 @@ interface Props {
 
 /**
  * Formats platforms with priority ordering:
- * PC -> newest Xbox -> newest PlayStation -> newest Nintendo -> others
+ * PC -> newest PlayStation -> newest Xbox -> newest Nintendo -> others
  */
 function formatPlatforms(platforms?: string, maxCount: number = 3): string {
   if (!platforms) return '';
@@ -118,6 +118,7 @@ export default function GameCard({ gameName, description, image, genres, platfor
             {formattedGenres && formattedPlatforms && ' • '}
             {formattedPlatforms}
             <br></br>
+            {/* surely this is fine right?*/}
             {truncatedDescription && <span dangerouslySetInnerHTML={{ __html: truncatedDescription }} />}
           </p>
         </div>
@@ -139,41 +140,6 @@ export default function GameCard({ gameName, description, image, genres, platfor
     );
   }
   
-  // Tiles view: compact square card
-  if (viewMode === 'tiles') {
-    return (
-      <div 
-        className="w-36 rounded-lg overflow-hidden bg-gray-800 shadow group hover:scale-105 transform transition border border-gray-700 relative z-0 hover:z-10 cursor-pointer"
-        onClick={onClick}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && onClick?.()}
-      >
-        <div className="relative">
-          {show_score && (
-            <div className="absolute top-2 left-2 z-10">
-              <div className={`text-white p-1 shadow-md rounded flex items-center justify-center text-xs w-6 ${scoreClass}`}>{score ?? '—'}</div>
-            </div>
-          )}
-          {show_status && (
-            <div className="absolute top-2 right-2 z-10">
-              <div className={`text-white p-1 shadow-md rounded flex items-center justify-center text-xs w-8 ${statusClass}`} title={`Status: ${status ?? '—'}`} aria-label={`Status: ${status ?? '—'}`}>
-                {statusIcon}
-                <span className="sr-only">{status}</span>
-              </div>
-            </div>
-          )}
-
-          <Image src={image} alt={gameName} className="w-full h-24 object-cover" width={144} height={96} />
-
-          <div className="p-2">
-            <h3 className="font-semibold text-sm text-white truncate">{gameName}</h3>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Default: cards (original)
   return (
     <div 

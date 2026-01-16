@@ -1,14 +1,13 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { UserButton } from '@clerk/nextjs';
 import { Game, UserGameData } from '@/lib/types';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
 import { calculateGenreStats, calculateGenreStatsByScore } from '@/lib/utils';
 import { GenreTrackerWrapper } from './components/GenreTrackerWrapper';
 import TabbedPanels from './components/TabbedPanels';
 import gamesData from './data/games.json';
 import quips from './data/quip.json';
 import { headers } from 'next/headers';
+import NavBar from '../components/navbar';
 
 const quip = quips[Math.floor(Math.random() * quips.length)];
 
@@ -87,17 +86,7 @@ export default async function DashboardPage() {
     return (
         <div className="min-h-screen bg-linear-to-b from-gray-900 to-black text-white">
             {/* Navigation */}
-            <nav className="border-b border-gray-800">
-                <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-                    <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition">
-                        <span className="text-2xl">🎮</span>
-                        <h1 className="text-2xl font-bold">MyGameList</h1>
-                    </Link>
-                    <div className="flex items-center space-x-4">
-                        <UserButton afterSignOutUrl="/" />
-                    </div>
-                </div>
-            </nav>
+            <NavBar />
 
             {/* Dashboard Content */}
             <main className="container mx-auto px-4 py-8">

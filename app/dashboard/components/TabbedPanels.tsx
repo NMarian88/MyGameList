@@ -62,6 +62,7 @@ const GamesView = ({ games, viewMode, showScore, showStatus, onGameClick }: Game
 export default function TabbedPanels() {
     const tabs = ["All", "Completed", "Playing", "Wishlist", "Dropped"] as const;
     type Tab = (typeof tabs)[number];
+    
     const [active, setActive] = useState<Tab>(tabs[0]);
     const [viewMode, setViewMode] = useState<ViewMode>(() => {
         return "cards";
@@ -141,6 +142,18 @@ export default function TabbedPanels() {
         }
     };
 
+    useEffect(() => {
+        const handleGameAdded = () => {
+            refreshGames();
+        };
+
+        window.addEventListener('gameAdded', handleGameAdded);
+
+        return () => {
+            window.removeEventListener('gameAdded', handleGameAdded);
+        };
+    }, []);
+
     const gamesByTab: Record<Tab, UserGameWithDetails[]> = {
         All: allGames,
         Completed: allGames.filter(g => g.status === "completed"),
@@ -193,7 +206,7 @@ export default function TabbedPanels() {
                     userGameData={selectedGame}
                     isOpen={isModalOpen}
                     onClose={closeModal}
-                    onStatusChange={refreshGames}  // Add this
+                    onStatusChange={refreshGames}
                 />
             )}
         </div>

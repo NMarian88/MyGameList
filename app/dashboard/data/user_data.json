@@ -1,5 +1,5 @@
 {
-  "user_38AmlAqHWjF8i1lheLeJnVI47Ay": {
+  "1234": {
     "games": [
       {
         "gameId": "1234",
@@ -136,6 +136,58 @@
       "completed": 6,
       "wishlist": 2,
       "dropped": 2
+    }
+  },
+  "user_38AmlAqHWjF8i1lheLeJnVI47Ay": {
+    "games": [
+      {
+        "gameId": "846303",
+        "status": "completed",
+        "reviews": [
+          {
+            "reviewText": "HIIIIIIIIIIIIIIIIIIIIII",
+            "reviewedAt": "2026-01-16T19:07:46.489Z",
+            "reviewScore": 10
+          }
+        ],
+        "completedAt": "2026-01-16T19:07:46.565Z"
+      },
+      {
+        "gameId": "22509",
+        "status": "wishlist"
+      },
+      {
+        "gameId": "36013",
+        "status": "wishlist"
+      },
+      {
+        "gameId": "339958",
+        "status": "completed",
+        "completedAt": "2026-01-16T19:13:12.022Z"
+      },
+      {
+        "gameId": "4186",
+        "status": "wishlist"
+      },
+      {
+        "gameId": "57668",
+        "status": "wishlist"
+      },
+      {
+        "gameId": "10926",
+        "status": "wishlist"
+      },
+      {
+        "gameId": "58806",
+        "status": "wishlist"
+      }
+    ],
+    "stats": {
+      "totalGames": 8,
+      "playing": 0,
+      "completed": 2,
+      "wishlist": 6,
+      "dropped": 0
     }
   }
 }

@@ -14,6 +14,7 @@ interface GameModalProps {
 }
 
 export default function GameModal({ game, userGameData, isOpen, onClose, onStatusChange }: GameModalProps) {
+    // Status editing state
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [currentStatusValue, setCurrentStatusValue] = useState(userGameData?.status);
@@ -375,67 +376,72 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                                     )}
                                 </div>
                             </div>
-                            { (localLatestReview?.reviewScore !== undefined && localLatestReview?.reviewScore !== null) || isEditingScore ? (
-                                <div className="flex items-center gap-2">
-                                    <span className="text-gray-400">Your Score:</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-gray-400">Your Score:</span>
+                                { (localLatestReview?.reviewScore !== undefined && localLatestReview?.reviewScore !== null) || isEditingScore ? (
+                                    <>
+                                        {/* Display mode */}
+                                        {!isEditingScore && localLatestReview?.reviewScore !== undefined && (
+                                            <div className="flex items-center gap-2">
+                                                <span
+                                                    onClick={() => setIsEditingScore(true)}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setIsEditingScore(true); e.preventDefault(); } }}
+                                                    className={`px-3 py-1 ${getScoreClass(localLatestReview.reviewScore)} text-white rounded text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+                                                >
+                                                    {localLatestReview.reviewScore}/10
+                                                </span>
+                                                <button
+                                                    onClick={() => setIsEditingScore(true)}
+                                                    className="text-sm text-gray-300 hover:text-white px-2 py-1 rounded bg-gray-800/40 border border-gray-700"
+                                                >
+                                                    Edit
+                                                </button>
+                                            </div>
+                                        )}
 
-                                    {/* Display mode */}
-                                    {!isEditingScore && localLatestReview?.reviewScore !== undefined && (
-                                        <div className="flex items-center gap-2">
-                                            <span
-                                                onClick={() => setIsEditingScore(true)}
-                                                role="button"
-                                                tabIndex={0}
-                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setIsEditingScore(true); e.preventDefault(); } }}
-                                                className={`px-3 py-1 ${getScoreClass(localLatestReview.reviewScore)} text-white rounded text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-                                            >
-                                                {localLatestReview.reviewScore}/10
-                                            </span>
-                                            <button
-                                                onClick={() => setIsEditingScore(true)}
-                                                className="text-sm text-gray-300 hover:text-white px-2 py-1 rounded bg-gray-800/40 border border-gray-700"
-                                            >
-                                                Edit
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    {/* Edit mode */}
-                                    {isEditingScore && (
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                ref={inputRef}
-                                                type="number"
-                                                min={0}
-                                                max={10}
-                                                step={1}
-                                                value={scoreInput ?? ''}
-                                                onChange={(e) => setScoreInput(e.target.value === '' ? undefined : Number(e.target.value))}
-                                                onBlur={() => {
-                                                    if (scoreInput === undefined) {
-                                                        handleCancelEditing();
-                                                    } else {
-                                                        handleBlurSave();
-                                                    }
-                                                }}
-                                                onKeyDown={(e) => {
-                                                    if ((e.key === 'Enter' || e.key === 'NumpadEnter') && scoreInput !== undefined) {
-                                                        handleSaveScore(Math.max(0, Math.min(10, Math.round(scoreInput))))
-                                                    } else if (e.key === 'Escape') {
-                                                        handleCancelEditing();
-                                                    }
-                                                }}
-                                                disabled={isUpdatingScore}
-                                                className="w-20 px-2 py-1 rounded bg-gray-800 border border-gray-700 text-white text-sm"
-                                                aria-label="Edit score"
-                                            />
-                                            {isUpdatingScore && (
-                                                <span className="text-sm text-gray-300">Saving...</span>
-                                            )}
-                                        </div>
-                                    )} 
-                                </div>
-                            ) : null }
+                                        {/* Edit mode */}
+                                        {isEditingScore && (
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    ref={inputRef}
+                                                    type="number"
+                                                    min={0}
+                                                    max={10}
+                                                    step={1}
+                                                    value={scoreInput ?? ''}
+                                                    onChange={(e) => setScoreInput(e.target.value === '' ? undefined : Number(e.target.value))}
+                                                    onBlur={() => {
+                                                        if (scoreInput === undefined) {
+                                                            handleCancelEditing();
+                                                        } else {
+                                                            handleBlurSave();
+                                                        }
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if ((e.key === 'Enter' || e.key === 'NumpadEnter') && scoreInput !== undefined) {
+                                                            handleSaveScore(Math.max(0, Math.min(10, Math.round(scoreInput))))
+                                                        } else if (e.key === 'Escape') {
+                                                            handleCancelEditing();
+                                                        }
+                                                    }}
+                                                    disabled={isUpdatingScore}
+                                                    className="w-20 px-2 py-1 rounded bg-gray-800 border border-gray-700 text-white text-sm"
+                                                    aria-label="Edit score"
+                                                />
+                                                {isUpdatingScore && (
+                                                    <span className="text-sm text-gray-300">Saving...</span>
+                                                )}
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <button onClick={() => setIsEditingScore(true)} className="text-sm text-gray-300 hover:text-white px-2 py-1 rounded bg-gray-800/40 border border-gray-700">
+                                        Add Score
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     )}
 
@@ -482,76 +488,79 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                     )}
 
                     {/* User Review */}
-                    {(localLatestReview?.reviewText || isEditingReview) && (
-                        <div className="pt-4 border-t border-gray-700">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-semibold text-white mb-3">Your Review</h3>
-                                {!isEditingReview && (
-                                    <button
-                                        onClick={() => { setIsEditingReview(true); setReviewInput(localLatestReview?.reviewText ?? ''); }}
-                                        className="text-sm text-gray-300 hover:text-white px-2 py-1 rounded bg-gray-800/40 border border-gray-700"
-                                    >
-                                        Edit
-                                    </button>
-                                )}
-                            </div>
-
+                    <div className="pt-4 border-t border-gray-700">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-white mb-3">Your Review</h3>
                             {!isEditingReview && localLatestReview?.reviewText && (
-                                <p
-                                    className="text-gray-300 italic cursor-pointer"
-                                    onClick={() => { setIsEditingReview(true); setReviewInput(localLatestReview.reviewText ?? ''); }}
-                                    role="button"
-                                    tabIndex={0}
-                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setIsEditingReview(true); setReviewInput(localLatestReview.reviewText ?? ''); } }}
+                                <button
+                                    onClick={() => { setIsEditingReview(true); setReviewInput(localLatestReview?.reviewText ?? ''); }}
+                                    className="text-sm text-gray-300 hover:text-white px-2 py-1 rounded bg-gray-800/40 border border-gray-700"
                                 >
-                                    &quot;{localLatestReview.reviewText}&quot;
-                                </p>
-                            )}
-
-                            {isEditingReview && (
-                                <div>
-                                    <textarea
-                                        ref={reviewRef}
-                                        rows={6}
-                                        value={reviewInput ?? ''}
-                                        onChange={(e) => setReviewInput(e.target.value)}
-                                        onBlur={() => {
-                                            const trimmed = reviewInput?.trim() ?? '';
-                                            if (trimmed === '') {
-                                                handleCancelReviewEditing();
-                                            } else {
-                                                handleBlurSaveReview();
-                                            }
-                                        }}
-                                        onKeyDown={(e) => {
-                                            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                                                const trimmed = reviewInput?.trim() ?? '';
-                                                if (trimmed !== '') handleSaveReview(trimmed);
-                                            } else if (e.key === 'Escape') {
-                                                handleCancelReviewEditing();
-                                            }
-                                        }}
-                                        disabled={isUpdatingReview}
-                                        className="w-full px-3 py-2 rounded bg-gray-800 border border-gray-700 text-white text-sm resize-y"
-                                        aria-label="Edit review"
-                                    />
-                                    <div className="mt-2 flex items-center gap-2">
-                                        {isUpdatingReview && <span className="text-sm text-gray-300">Saving...</span>}
-                                        <span className="text-sm text-gray-500">Press Ctrl/Cmd+Enter to save, Esc to cancel</span>
-                                    </div>
-
-                                </div>
-                            )}
-                            {!isEditingReview && !localLatestReview?.reviewText && (
-                                <p className="text-sm text-gray-400">No review yet. Click Edit to add one.</p>
-                            )}
-                            {localLatestReview?.reviewedAt && (
-                                <p className="text-sm text-gray-500 mt-2">
-                                    Reviewed on {new Date(localLatestReview.reviewedAt).toLocaleDateString()}
-                                </p>
+                                    Edit
+                                </button>
                             )}
                         </div>
-                    )}
+
+                        {localLatestReview?.reviewText || isEditingReview ? (
+                            <>
+                                {!isEditingReview && localLatestReview?.reviewText && (
+                                    <p
+                                        className="text-gray-300 italic cursor-pointer"
+                                        onClick={() => { setIsEditingReview(true); setReviewInput(localLatestReview.reviewText ?? ''); }}
+                                        role="button"
+                                        tabIndex={0}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setIsEditingReview(true); setReviewInput(localLatestReview.reviewText ?? ''); } }}
+                                    >
+                                        &quot;{localLatestReview.reviewText}&quot;
+                                    </p>
+                                )}
+
+                                {isEditingReview && (
+                                    <div>
+                                        <textarea
+                                            ref={reviewRef}
+                                            rows={6}
+                                            value={reviewInput ?? ''}
+                                            onChange={(e) => setReviewInput(e.target.value)}
+                                            onBlur={() => {
+                                                const trimmed = reviewInput?.trim() ?? '';
+                                                if (trimmed === '') {
+                                                    handleCancelReviewEditing();
+                                                } else {
+                                                    handleBlurSaveReview();
+                                                }
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                                                    const trimmed = reviewInput?.trim() ?? '';
+                                                    if (trimmed !== '') handleSaveReview(trimmed);
+                                                } else if (e.key === 'Escape') {
+                                                    handleCancelReviewEditing();
+                                                }
+                                            }}
+                                            disabled={isUpdatingReview}
+                                            className="w-full px-3 py-2 rounded bg-gray-800 border border-gray-700 text-white text-sm resize-y"
+                                            aria-label="Edit review"
+                                        />
+                                        <div className="mt-2 flex items-center gap-2">
+                                            {isUpdatingReview && <span className="text-sm text-gray-300">Saving...</span>}
+                                            <span className="text-sm text-gray-500">Press Ctrl/Cmd+Enter to save, Esc to cancel</span>
+                                        </div>
+
+                                    </div>
+                                )}
+                                {localLatestReview?.reviewedAt && (
+                                    <p className="text-sm text-gray-500 mt-2">
+                                        Reviewed on {new Date(localLatestReview.reviewedAt).toLocaleDateString()}
+                                    </p>
+                                )}
+                            </>
+                        ) : (
+                            <button onClick={() => setIsEditingReview(true)} className="text-sm text-gray-300 hover:text-white px-2 py-1 rounded bg-gray-800/40 border border-gray-700">
+                                Add Review
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

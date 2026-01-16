@@ -66,7 +66,7 @@ export function GenreTracker({ genres: providedGenres }: GenreTrackerProps) {
 
     return (
         <div className="relative w-full h-full flex items-center justify-center">
-            <svg viewBox="-4 -2 32 28" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" className="w-full h-full min-h-[280px]">
+            <svg viewBox="-4 -2 32 28" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" className="w-full h-full min-h-70">
                 {/* Background rings (r=10, 8, 6, 4, 2) */}
                 <polygon
                     points="12.0 2.0 19.1 4.9 22.0 12.0 19.1 19.1 12.0 22.0 4.9 19.1 2.0 12.0 4.9 4.9"
