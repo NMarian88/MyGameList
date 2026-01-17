@@ -1,7 +1,15 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
+import { Game, UserGameData } from '@/lib/types';
 import { redirect } from 'next/navigation';
-import { UserButton } from '@clerk/nextjs';
-import Link from 'next/link';
+import { calculateGenreStats, calculateGenreStatsByScore } from '@/lib/utils';
+import { GenreTrackerWrapper } from './components/GenreTrackerWrapper';
+import TabbedPanels from './components/TabbedPanels';
+import gamesData from './data/games.json';
+import quips from './data/quip.json';
+import { headers } from 'next/headers';
+import NavBar from '../components/navbar';
+
+const quip = quips[Math.floor(Math.random() * quips.length)];
 
 export default async function DashboardPage() {
     const { userId } = await auth();
@@ -11,6 +19,34 @@ export default async function DashboardPage() {
         redirect('/sign-in');
     }
 
+    // Fetch user data from API
+    const headersList = await headers();
+    const host = headersList.get('host') || 'localhost:3000';
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    
+    const response = await fetch(`${protocol}://${host}/api/user/games`, {
+        headers: {
+            Cookie: headersList.get('cookie') || '',
+        },
+        cache: 'no-store',
+    });
+
+    let userGames: UserGameData[] = [];
+    let stats = {
+        totalGames: 0,
+        playing: 0,
+        completed: 0,
+        wishlist: 0,
+        dropped: 0
+    };
+
+    if (response.ok) {
+        const data = await response.json();
+        userGames = data.games || [];
+        stats = data.stats || stats;
+    }
+
+    // Get users display name
     const user = await currentUser();
     const displayName =
     user?.firstName ??
@@ -18,75 +54,85 @@ export default async function DashboardPage() {
     user?.fullName ??
     user?.emailAddresses?.[0]?.emailAddress?.split('@')[0] ??
     'Player';
+
+    // Get user's games and calculate genre stats
+    const games = gamesData as Record<string, Game>;
+    const userGameDetails = userGames
+        .map(ug => games[ug.gameId])
+        .filter(Boolean);
+    const genreStats = calculateGenreStats(userGameDetails);
+    const genreStatsByScore = calculateGenreStatsByScore(userGameDetails, userGames);
+
+    // Get stats from user data
+    const totalGames = stats.totalGames || 0;
+    const playingCount = stats.playing || 0;
+    const completedCount = stats.completed || 0;
     
+    // Calculate average rating from all reviews
+    const allReviews = userGames.flatMap(g => g.reviews || []);
+    const reviewScores = allReviews
+        .map(r => r.reviewScore)
+        .filter((score): score is number => score !== undefined && score !== null);
+    const avgRating = reviewScores.length > 0 
+        ? (reviewScores.reduce((sum, score) => sum + score, 0) / reviewScores.length).toFixed(1)
+        : '-';
+    
+    // Calculate completion rate (completed / total)
+    const completionRate = totalGames > 0
+        ? Math.round((completedCount / totalGames) * 100)
+        : 0;
+
+
     return (
-        <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+        <div className="min-h-screen bg-linear-to-b from-gray-900 to-black text-white">
             {/* Navigation */}
-            <nav className="border-b border-gray-800">
-                <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-                    <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition">
-                        <span className="text-2xl">🎮</span>
-                        <h1 className="text-2xl font-bold">MyGameList</h1>
-                    </Link>
-                    <div className="flex items-center space-x-4">
-                        <UserButton afterSignOutUrl="/" />
-                    </div>
-                </div>
-            </nav>
+            <NavBar />
 
             {/* Dashboard Content */}
             <main className="container mx-auto px-4 py-8">
                 <div className="max-w-6xl mx-auto">
                     {/* Welcome Banner */}
-                    <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 rounded-2xl p-8 mb-8 border border-purple-700/30">
+                    <div className="bg-linear-to-r from-purple-900/50 to-blue-900/50  p-8 mb-8 border border-purple-700/30">
                         <h1 className="text-3xl font-bold mb-2">
-                            Welcome back, <span className="text-purple-300">{displayName}</span>! 🎮
+                            Welcome back, <span className="text-purple-300">{displayName}</span>!
                         </h1>
-                        <p className="text-gray-300">
-                            Your personal game tracking dashboard
-                        </p>
+                        <p className="text-gray-300 italic mt-2">{quip}</p>
                     </div>
 
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 md:auto-rows-fr">
+                        <div className="bg-gray-800/50 backdrop-blur-sm  p-6 border border-gray-700">
                             <h3 className="text-gray-400 text-sm mb-2">Total Games</h3>
-                            <p className="text-3xl font-bold">0</p>
-                            <p className="text-gray-400 text-sm mt-2">Start adding games!</p>
+                            <p className="text-3xl font-bold">{totalGames}</p>
+                            <p className="text-gray-400 text-sm mt-2">{totalGames === 0 ? 'Start adding games!' : 'In your library'}</p>
                         </div>
-                        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+                        <div className="bg-gray-800/50 backdrop-blur-sm  p-6 border border-gray-700">
                             <h3 className="text-gray-400 text-sm mb-2">Currently Playing</h3>
-                            <p className="text-3xl font-bold">0</p>
-                            <p className="text-gray-400 text-sm mt-2">What are you playing?</p>
+                            <p className="text-3xl font-bold">{playingCount}</p>
+                            <p className="text-gray-400 text-sm mt-2">{playingCount === 0 ? 'What are you playing?' : 'Active games'}</p>
                         </div>
-                        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+                        <div className="bg-gray-800/50 backdrop-blur-sm  p-6 border border-gray-700 md:row-span-2 flex flex-col">
+                            <GenreTrackerWrapper countStats={genreStats} scoreStats={genreStatsByScore} />
+                        </div>
+                        <div className="bg-gray-800/50 backdrop-blur-sm  p-6 border border-gray-700">
                             <h3 className="text-gray-400 text-sm mb-2">Avg. Rating</h3>
-                            <p className="text-3xl font-bold">-</p>
-                            <p className="text-gray-400 text-sm mt-2">Rate your games</p>
+                            <p className="text-3xl font-bold">{avgRating}</p>
+                            <p className="text-gray-400 text-sm mt-2">{avgRating === '-' ? 'Rate your games' : 'Your average score'}</p>
+                        </div>                        
+                        <div className="bg-gray-800/50 backdrop-blur-sm  p-6 border border-gray-700">
+                            <h3 className="text-gray-400 text-sm mb-2">Completion Rate</h3>
+                            <p className="text-3xl font-bold">{completionRate}%</p>
+                            <p className="text-gray-400 text-sm mt-2">{completedCount} of {totalGames} completed</p>
                         </div>
                     </div>
 
-                    {/* Quick Actions */}
-                    <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700">
-                        <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-                        <div className="flex flex-wrap gap-4">
-                            <button className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg transition">
-                                ➕ Add New Game
-                            </button>
-                            <button className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition">
-                                🔍 Search Games
-                            </button>
-                            <button className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition">
-                                📊 View Stats
-                            </button>
-                            <button className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition">
-                                ⭐ Rate Games
-                            </button>
-                        </div>
+                    {/* Panel Container (tabbed) */}
+                    <div className="mb-8 w-full">
+                        <TabbedPanels />
                     </div>
 
                     {/* User Info (for debugging) */}
-                    <div className="mt-8 p-6 bg-gray-900/50 rounded-xl border border-gray-800">
+                    <div className="mt-2 p-6 bg-gray-900/50  border border-gray-800">
                         <h3 className="text-lg font-semibold mb-4">Your Profile Info</h3>
                         <div className="text-sm text-gray-300 space-y-2">
                             <p>Email: {user?.emailAddresses[0]?.emailAddress}</p>

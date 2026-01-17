@@ -1,31 +1,7 @@
+import { Game } from "./types";
+
 const RAWG_API_KEY = process.env.NEXT_PUBLIC_RAWG_API_KEY;
 const BASE_URL = 'https://api.rawg.io/api';
-
-export interface Game{
-    id: number;
-    name: string;
-    released: string;
-    background_image: string;
-    rating: number;
-    rating_top: number;
-    ratings_count: number;
-    metacritic: number;
-    playtime: number;
-    platforms:{
-        platform: {
-            id:number;
-            name: string;
-        };
-    }[];
-    genres:{
-        id:number;
-        name: string;
-    }[];
-    short_screenshots:{
-        id:number;
-        image: string;
-    }[];
-}
 
 export interface ApiResponse{
     count: number;
@@ -65,12 +41,21 @@ export async function getTopRatedGames(page=1):Promise<ApiResponse>{
     return response.json();
 }
 
-export async function getGameDetails(id:number):Promise<Game>{
+export async function getGameDetails(idOrSlug: number | string): Promise<Game> {
     const response = await fetch(
-        `${BASE_URL}/games/${id}?key=${RAWG_API_KEY}`
+        `${BASE_URL}/games/${idOrSlug}?key=${RAWG_API_KEY}`
     );
     if(!response.ok){
-        throw new Error('Failed to fetch game');
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch game: ${response.status} ${response.statusText} - ${errorText}`);
     }
-    return response.json();
+    const text = await response.text();
+    if (!text) {
+        throw new Error('Empty response from RAWG API');
+    }
+    try {
+        return JSON.parse(text);
+    } catch (error) {
+        throw new Error(`Invalid JSON response from RAWG API: ${text.substring(0, 100)}`);
+    }
 }
