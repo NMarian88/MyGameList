@@ -43,7 +43,7 @@ export default function NavBar() {
             } finally {
                 setIsSearching(false);
             }
-        }, 300);
+        }, 800);
 
         return () => {
             if (searchTimeoutRef.current) {
