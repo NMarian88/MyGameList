@@ -43,7 +43,7 @@ export default function NavBar() {
             } finally {
                 setIsSearching(false);
             }
-        }, 300);
+        }, 800);
 
         return () => {
             if (searchTimeoutRef.current) {
@@ -123,7 +123,7 @@ export default function NavBar() {
                                                 <div className="flex items-center space-x-3">
                                                     {game.background_image && (
                                                         <div className={"w-12 h-12 rounded-lg overflow-hidden shrink-0"}>
-                                                            <Image src={game.background_image} alt="game.name" className="w-full h-full object-cover" />
+                                                            <Image src={game.background_image} alt="game.name" className="w-full h-full object-cover" width={256} height={256} />
                                                         </div>
                                                     )}
                                                     <div>
