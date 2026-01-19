@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
-import { X, ChevronDown } from 'lucide-react';
+import { X, ChevronDown,Trash2 } from 'lucide-react';
 import { Game, UserGameData } from '@/lib/types';
 
 interface GameModalProps {
@@ -19,7 +19,7 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [currentStatusValue, setCurrentStatusValue] = useState(userGameData?.status);
     const dropdownRef = useRef<HTMLDivElement>(null);
-
+    const [isDeleting,setIsDeleting] = useState(false);
     // Score editing state
     const [isEditingScore, setIsEditingScore] = useState(false);
     const [isUpdatingScore, setIsUpdatingScore] = useState(false);
@@ -287,6 +287,34 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
     const genres = game.genres?.map(g => g.name).join(', ') || 'N/A';
     const platforms = game.platforms?.map(p => p.platform.name).join(', ') || 'N/A';
 
+    const deleteFromCollection = async() => {
+        if (!confirm("Are you sure you want to remove this game from your collection? This cannot be undone.")) {
+            return;
+        }
+
+        setIsDeleting(true);
+        try {
+
+            const response = await fetch(`/api/user/games?gameId=${game.id}`, {
+                method: 'DELETE',
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Failed to delete');
+            }
+
+            // Successfully deleted
+            if (onStatusChange) onStatusChange(); // Refresh the parent list
+            onClose(); // Close the modal
+        } catch (error) {
+            console.error("Error deleting game:", error);
+            alert("Failed to remove game from collection.");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
     const modalContent = (
         <div 
             className="fixed top-0 left-0 right-0 bottom-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto"
@@ -487,6 +515,16 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                     <div className="pt-4 border-t border-gray-700">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold text-white mb-3">Your Review</h3>
+                            {userGameData && (
+                                <button
+                                    onClick={deleteFromCollection}
+                                    disabled={isDeleting}
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded bg-red-900/30 border border-red-800 text-red-200 hover:bg-red-900/50 hover:text-white transition-colors text-sm disabled:opacity-50"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    {isDeleting ? "Removing..." : "Remove from Collection"}
+                                </button>
+                            )}
                             {!isEditingReview && localLatestReview?.reviewText && (
                                 <button
                                     onClick={() => { setIsEditingReview(true); setReviewInput(localLatestReview?.reviewText ?? ''); }}
@@ -552,9 +590,14 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                                 )}
                             </>
                         ) : (
-                            <button onClick={() => setIsEditingReview(true)} className="text-sm text-gray-300 hover:text-white px-2 py-1 rounded bg-gray-800/40 border border-gray-700">
-                                Add Review
-                            </button>
+
+                                <button onClick={() => setIsEditingReview(true)} className="text-sm text-gray-300 hover:text-white px-2 py-1 rounded bg-gray-800/40 border border-gray-700">
+                                    Add Review
+                                </button>
+
+
+
+
                         )}
                     </div>
                 </div>

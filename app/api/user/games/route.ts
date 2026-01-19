@@ -66,7 +66,34 @@ export async function GET(request: Request) {
         );
     }
 }
+export async function DELETE(request: Request) {
+    try {
 
+        const { searchParams } = new URL(request.url);
+        const gameId = searchParams.get("gameId");
+        if (!gameId) {
+            return NextResponse.json({ error: "Game ID is required" }, { status: 400 });
+        }
+        const {userId} = await auth();
+        const { error } = await supabaseServer
+            .from('user_games')
+            .delete()
+            .match({
+                user_id: userId,
+                game_id: gameId
+            });
+        if (error) {
+            console.error("Database error:", error);
+            return NextResponse.json({ error: "Failed to remove game" }, { status: 500 });
+        }
+
+        return NextResponse.json({ success: true });
+
+    } catch (error) {
+        console.error("Error deleting user game:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}
 export async function POST(request: Request) {
     try {
         const { userId } = await auth();
