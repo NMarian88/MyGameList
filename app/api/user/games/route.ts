@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
 import { auth } from "@clerk/nextjs/server";
-import { UserData, UserGameData } from "../../../../lib/types";
-
-type MultiUserData = {
-    [userId: string]: UserData;
-};
+import { UserGameData } from "../../../../lib/types";
+import { supabaseServer } from "@/lib/supabase";
 
 export async function GET(request: Request) {
     try {
@@ -19,17 +14,49 @@ export async function GET(request: Request) {
             );
         }
 
-        // Read user data file
-        const userDataPath = path.join(process.cwd(), "app/dashboard/data/user_data.json");
-        const fileContent = await fs.readFile(userDataPath, "utf-8");
-        const allUserData = JSON.parse(fileContent) as MultiUserData;
+        // Fetch user games with reviews from Supabase
+        const { data: userGames, error } = await supabaseServer
+            .from('user_games')
+            .select(`
+                *,
+                reviews(
+                    review_score,
+                    review_text,
+                    reviewed_at
+                )
+            `)
+            .eq('user_id', userId);
 
-        // Get or initialize user data
-        const userData = allUserData[userId] || { games: [], stats: { totalGames: 0, playing: 0, completed: 0, wishlist: 0, dropped: 0 } };
+        if (error) {
+            console.error("Database error:", error);
+            return NextResponse.json(
+                { error: "Failed to fetch user data" },
+                { status: 500 }
+            );
+        }
+
+        // Calculate stats
+        const games = userGames || [];
+        const stats = {
+            totalGames: games.length,
+            playing: games.filter(g => g.status === "playing").length,
+            completed: games.filter(g => g.status === "completed").length,
+            wishlist: games.filter(g => g.status === "wishlist").length,
+            dropped: games.filter(g => g.status === "dropped").length
+        };
 
         return NextResponse.json({ 
-            games: userData.games || [],
-            stats: userData.stats
+            games: games.map(g => ({
+                gameId: g.game_id,
+                status: g.status,
+                reviews: (g.reviews || []).map((r: any) => ({
+                    reviewScore: r.review_score,
+                    reviewText: r.review_text,
+                    reviewedAt: r.reviewed_at
+                })),
+                completedAt: g.completed_at
+            })),
+            stats
         });
     } catch (error) {
         console.error("Error fetching user data:", error);
@@ -68,26 +95,6 @@ export async function POST(request: Request) {
             );
         }
 
-        // Read current user data
-        const userDataPath = path.join(process.cwd(), "app/dashboard/data/user_data.json");
-        const fileContent = await fs.readFile(userDataPath, "utf-8");
-        const allUserData = JSON.parse(fileContent) as MultiUserData;
-
-        // Get or initialize user data for this specific user
-        if (!allUserData[userId]) {
-            allUserData[userId] = {
-                games: [],
-                stats: { totalGames: 0, playing: 0, completed: 0, wishlist: 0, dropped: 0 }
-            };
-        }
-
-        const currentUserData = allUserData[userId];
-
-        // Initialize games array if it doesn't exist
-        if (!currentUserData.games) {
-            currentUserData.games = [];
-        }
-
         // Fetch the game details to get both ID and slug
         let gameDetails;
         try {
@@ -99,54 +106,123 @@ export async function POST(request: Request) {
             console.warn("Could not fetch game details:", error);
         }
 
-        // Find existing game by gameId, or by matching ID/slug if we have game details
-        let existingIndex = currentUserData.games.findIndex((g) => g.gameId === gameId);
-        
-        if (existingIndex < 0 && gameDetails) {
-            // Check if we have the same game stored with a different identifier (ID vs slug)
-            existingIndex = currentUserData.games.findIndex((g) => 
-                g.gameId === String(gameDetails.id) || 
-                g.gameId === gameDetails.slug ||
-                String(g.gameId) === String(gameDetails.id)
-            );
-        }
-        
-        const gameData: UserGameData = {
-            gameId: gameDetails ? String(gameDetails.id) : gameId, // Always use numeric ID if available
+        // Use numeric ID if available, otherwise use provided gameId
+        const finalGameId = gameDetails ? String(gameDetails.id) : gameId;
+
+        // Check if user already has this game
+        const { data: existingGame } = await supabaseServer
+            .from('user_games')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('game_id', finalGameId)
+            .maybeSingle();
+
+        const gameData = {
+            user_id: userId,
+            game_id: finalGameId,
             status,
-            ...(reviews && { reviews }),
-            ...(status === "completed" && { completedAt: completedAt || new Date().toISOString() })
+            completed_at: status === "completed" ? (completedAt || new Date().toISOString()) : null
         };
 
-        if (existingIndex >= 0) {
-            // Update existing entry (use the numeric ID if we have it)
-            currentUserData.games[existingIndex] = gameData;
+        let userGameId;
+        if (existingGame) {
+            // Update existing entry
+            const result = await supabaseServer
+                .from('user_games')
+                .update(gameData)
+                .eq('user_id', userId)
+                .eq('game_id', finalGameId)
+                .select('id')
+                .single();
+            
+            if (result.error) {
+                console.error("Database error:", result.error);
+                return NextResponse.json(
+                    { error: "Failed to update user data" },
+                    { status: 500 }
+                );
+            }
+            userGameId = result.data.id;
         } else {
-            // Add new entry
-            currentUserData.games.push(gameData);
+            // Insert new entry
+            const result = await supabaseServer
+                .from('user_games')
+                .insert(gameData)
+                .select('id')
+                .single();
+            
+            if (result.error) {
+                console.error("Database error:", result.error);
+                return NextResponse.json(
+                    { error: "Failed to insert user data" },
+                    { status: 500 }
+                );
+            }
+            userGameId = result.data.id;
         }
 
-        // Update stats
-        currentUserData.stats = {
-            totalGames: currentUserData.games.length,
-            playing: currentUserData.games.filter(g => g.status === "playing").length,
-            completed: currentUserData.games.filter(g => g.status === "completed").length,
-            wishlist: currentUserData.games.filter(g => g.status === "wishlist").length,
-            dropped: currentUserData.games.filter(g => g.status === "dropped").length
+        // Handle review update (single review, not array)
+        if (reviews && Array.isArray(reviews) && reviews.length > 0) {
+            // Get the latest review from the request
+            const latestReview = reviews[reviews.length - 1];
+            
+            // Check if there's an existing review for this user_game
+            const { data: existingReviews } = await supabaseServer
+                .from('reviews')
+                .select('id')
+                .eq('user_game_id', userGameId)
+                .order('reviewed_at', { ascending: false })
+                .limit(1);
+
+            const reviewData = {
+                user_game_id: userGameId,
+                review_score: latestReview.reviewScore,
+                review_text: latestReview.reviewText,
+                reviewed_at: latestReview.reviewedAt || new Date().toISOString()
+            };
+
+            let reviewError;
+            if (existingReviews && existingReviews.length > 0) {
+                // Update existing review
+                const result = await supabaseServer
+                    .from('reviews')
+                    .update(reviewData)
+                    .eq('id', existingReviews[0].id);
+                reviewError = result.error;
+            } else {
+                // Insert new review
+                const result = await supabaseServer
+                    .from('reviews')
+                    .insert(reviewData);
+                reviewError = result.error;
+            }
+
+            if (reviewError) {
+                console.error("Review operation error:", reviewError);
+                // Don't fail the request if reviews fail, just log it
+            }
+        }
+
+        // Calculate updated stats
+        const { data: allUserGames } = await supabaseServer
+            .from('user_games')
+            .select('status')
+            .eq('user_id', userId);
+
+        const stats = {
+            totalGames: allUserGames?.length || 0,
+            playing: allUserGames?.filter(g => g.status === "playing").length || 0,
+            completed: allUserGames?.filter(g => g.status === "completed").length || 0,
+            wishlist: allUserGames?.filter(g => g.status === "wishlist").length || 0,
+            dropped: allUserGames?.filter(g => g.status === "dropped").length || 0
         };
-
-        // Update the user's data in the multi-user structure
-        allUserData[userId] = currentUserData;
-
-        // Write updated data back to file
-        await fs.writeFile(userDataPath, JSON.stringify(allUserData, null, 2));
 
         return NextResponse.json({ 
             success: true, 
-            message: `Game ${existingIndex >= 0 ? 'updated' : 'added'} with status: ${status}`,
-            gameId,
+            message: `Game ${existingGame ? 'updated' : 'added'} with status: ${status}`,
+            gameId: finalGameId,
             userId,
-            stats: currentUserData.stats
+            stats
         });
 
     } catch (error) {

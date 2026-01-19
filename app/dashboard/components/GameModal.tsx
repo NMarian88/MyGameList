@@ -71,15 +71,13 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
 
         setIsUpdatingScore(true);
         try {
-            // Prepare new reviews array: update last review if exists, otherwise append a new one
-            const currentReviews = Array.isArray(userGameData?.reviews) ? [...userGameData!.reviews] : [];
             const now = new Date().toISOString();
-            if (currentReviews.length > 0) {
-                const updated = { ...currentReviews[currentReviews.length - 1], reviewScore: newScore, reviewedAt: now };
-                currentReviews[currentReviews.length - 1] = updated;
-            } else {
-                currentReviews.push({ reviewScore: newScore, reviewedAt: now });
-            }
+            // Create updated review (keep existing text if any)
+            const updatedReview = {
+                reviewScore: newScore,
+                reviewText: localLatestReview?.reviewText,
+                reviewedAt: now
+            };
 
             const response = await fetch('/api/user/games', {
                 method: 'POST',
@@ -87,14 +85,14 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                 body: JSON.stringify({
                     gameId: String(game.id),
                     status: userGameData?.status || 'completed',
-                    reviews: currentReviews
+                    reviews: [updatedReview] // Send single review
                 }),
             });
 
             if (!response.ok) throw new Error('Failed to update score');
 
             // Optimistically update local state for immediate UI feedback
-            setLocalLatestReview(currentReviews[currentReviews.length - 1]);
+            setLocalLatestReview(updatedReview);
             if (onStatusChange) onStatusChange();
             setIsEditingScore(false);
         } catch (error) {
@@ -143,14 +141,13 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
 
         setIsUpdatingReview(true);
         try {
-            const currentReviews = Array.isArray(userGameData?.reviews) ? [...userGameData!.reviews] : [];
             const now = new Date().toISOString();
-            if (currentReviews.length > 0) {
-                const updated = { ...currentReviews[currentReviews.length - 1], reviewText: newText, reviewedAt: now };
-                currentReviews[currentReviews.length - 1] = updated;
-            } else {
-                currentReviews.push({ reviewText: newText, reviewedAt: now });
-            }
+            // Create updated review (keep existing score if any)
+            const updatedReview = {
+                reviewScore: localLatestReview?.reviewScore,
+                reviewText: newText,
+                reviewedAt: now
+            };
 
             const response = await fetch('/api/user/games', {
                 method: 'POST',
@@ -158,13 +155,13 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                 body: JSON.stringify({
                     gameId: String(game.id),
                     status: userGameData?.status || 'completed',
-                    reviews: currentReviews
+                    reviews: [updatedReview] // Send single review
                 }),
             });
 
             if (!response.ok) throw new Error('Failed to update review');
 
-            setLocalLatestReview(currentReviews[currentReviews.length - 1]);
+            setLocalLatestReview(updatedReview);
             if (onStatusChange) onStatusChange();
             setIsEditingReview(false);
         } catch (error) {
@@ -249,7 +246,6 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                 body: JSON.stringify({
                     gameId: String(game.id),
                     status: newStatus,
-                    reviews: userGameData.reviews,
                     ...(newStatus === 'completed' && { completedAt: new Date().toISOString() })
                 }),
             });

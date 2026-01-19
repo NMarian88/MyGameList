@@ -26,7 +26,7 @@ const GamesView = ({ games, viewMode, showScore, showStatus, onGameClick }: Game
             ? g.game.genres.map(genre => genre.name).join(', ') 
             : '';
         const platforms = Array.isArray(g.game.platforms)
-            ? g.game.platforms.map(plat => plat.platform.name).join(', ')
+            ? g.game.platforms.map(plat => plat.platform?.name).filter(Boolean).join(', ')
             : '';
         
         return (
@@ -97,10 +97,11 @@ export default function TabbedPanels() {
                                 return null;
                             }
                             const game = await response.json();
-                            return {
+                            const combined = {
                                 ...userGame,
                                 game
                             };
+                            return combined;
                         } catch (error) {
                             console.error(`Error fetching game ${userGame.gameId}:`, error);
                             return null;

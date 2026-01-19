@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
-import games from "../../dashboard/data/games.json";
 import { Game } from "../../../lib/types";
 import { getGameDetails } from "../../../lib/rawg-api";
+import { supabase, supabaseServer } from '@/lib/supabase';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -13,37 +11,68 @@ export async function GET(request: Request) {
     const identifier = gameId || gameSlug;
 
     if (identifier) {
-        // First, check if game exists locally (by ID or slug)
-        const gamesRecord = games as Record<string, Game>;
-        let localGame: Game | undefined = gamesRecord[identifier]; // Check by ID
+        const isNumeric = /^\d+$/.test(identifier);
         
-        if (!localGame) {
-            // Check by slug if not found by ID
-            localGame = Object.values(gamesRecord).find(game => 
-                game.slug === identifier || game.name?.toLowerCase().replace(/\s+/g, '-') === identifier.toLowerCase()
-            );
+        // Check if game exists in database (by ID or slug)
+        const { data: game, error } = await supabase
+            .from('games')
+            .select('*')
+            .or(isNumeric ? `rawg_id.eq.${identifier}` : `slug.eq.${identifier}`)
+            .maybeSingle();
+        
+        if (error && error.code !== 'PGRST116') {
+            console.error('Database error:', error);
+            return NextResponse.json({ error: 'Database error' }, { status: 500 });
         }
         
-        if (localGame) {
-            return NextResponse.json(localGame);
+        if (game) {
+            // Ensure the database game has the correct structure
+            const formattedGame = {
+                id: game.rawg_id,
+                name: game.name,
+                slug: game.slug,
+                description: game.metadata?.description || game.description,
+                released: game.released,
+                background_image: game.background_image,
+                rating: game.rating,
+                rating_top: game.rating_top,
+                ratings_count: game.metadata?.ratings_count,
+                metacritic: game.metacritic,
+                playtime: game.playtime,
+                platforms: game.platforms || [],
+                genres: game.genres || [],
+                short_screenshots: game.metadata?.short_screenshots || [],
+                ...game.metadata
+            };
+            return NextResponse.json(formattedGame);
         }
         
-        // If not found locally, fetch from RAWG API (works with both ID and slug)
+        // If not found in database, fetch from RAWG API
         try {
-            // Check if identifier is numeric, otherwise treat as slug
-            const isNumeric = /^\d+$/.test(identifier);
             const gameFromApi = await getGameDetails(isNumeric ? Number(identifier) : identifier);
             
-            // Optionally save to local storage for future use (using game ID as key)
-            try {
-                const gamesPath = path.join(process.cwd(), "app/dashboard/data/games.json");
-                const fileContent = await fs.readFile(gamesPath, "utf-8");
-                const currentGames = fileContent ? JSON.parse(fileContent) as Record<string, Game> : {};
-                currentGames[String(gameFromApi.id)] = gameFromApi;
-                await fs.writeFile(gamesPath, JSON.stringify(currentGames, null, 2));
-            } catch (saveError) {
-                // Log but don't fail if we can't save locally
-                console.warn("Could not save game locally:", saveError);
+            // Map to database structure: extract key fields + store full response in metadata
+            const gameRecord = {
+                rawg_id: gameFromApi.id,
+                name: gameFromApi.name,
+                slug: gameFromApi.slug,
+                released: gameFromApi.released,
+                rating: gameFromApi.rating,
+                rating_top: gameFromApi.rating_top,
+                metacritic: gameFromApi.metacritic,
+                playtime: gameFromApi.playtime,
+                platforms: gameFromApi.platforms,
+                genres: gameFromApi.genres,
+                background_image: gameFromApi.background_image,
+                metadata: gameFromApi  // Store full RAWG response as JSONB
+            };
+            
+            const { error: upsertError } = await supabaseServer
+                .from('games')
+                .upsert(gameRecord, { onConflict: 'id' });
+            
+            if (upsertError) {
+                console.warn("Could not save game to database:", upsertError);
             }
             
             return NextResponse.json(gameFromApi);
@@ -57,10 +86,17 @@ export async function GET(request: Request) {
         }
     }
 
-    // Return all games
-    const allGames = Object.entries(games).map(([_, game]) => game);
+    // Return all games from database
+    const { data: allGames, error } = await supabase
+        .from('games')
+        .select('*');
+    
+    if (error) {
+        console.error('Database error:', error);
+        return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    }
 
-    return NextResponse.json({ games: allGames, total: allGames.length });
+    return NextResponse.json({ games: allGames || [], total: allGames?.length || 0 });
 }
 
 export async function POST(request: Request) {
@@ -75,35 +111,45 @@ export async function POST(request: Request) {
             );
         }
 
-        // Read current games data
-        const gamesPath = path.join(process.cwd(), "app/dashboard/data/games.json");
-        const fileContent = await fs.readFile(gamesPath, "utf-8");
-        const currentGames = JSON.parse(fileContent) as Record<string, Game>;
-
         // Check if game already exists
-        if (currentGames[id]) {
+        const { data: existingGame } = await supabase
+            .from('games')
+            .select('id')
+            .eq('id', id)
+            .maybeSingle();
+
+        if (existingGame) {
             return NextResponse.json(
                 { error: "Game with this ID already exists. Use PUT to update." },
                 { status: 409 }
             );
         }
 
-        // Add new game with proper structure
+        // Add new game
         const newGame: Game = {
             id,
             name: gameData.name,
             ...gameData
         };
 
-        currentGames[id] = newGame;
+        const { data, error } = await supabaseServer
+            .from('games')
+            .insert([newGame])
+            .select()
+            .single();
 
-        // Write updated data back to file
-        await fs.writeFile(gamesPath, JSON.stringify(currentGames, null, 2));
+        if (error) {
+            console.error("Database error:", error);
+            return NextResponse.json(
+                { error: "Failed to add game" },
+                { status: 500 }
+            );
+        }
 
         return NextResponse.json({
             success: true,
             message: "Game added successfully",
-            game: newGame
+            game: data
         });
 
     } catch (error) {
@@ -127,32 +173,32 @@ export async function PUT(request: Request) {
             );
         }
 
-        // Read current games data
-        const gamesPath = path.join(process.cwd(), "app/dashboard/data/games.json");
-        const fileContent = await fs.readFile(gamesPath, "utf-8");
-        const currentGames = JSON.parse(fileContent) as Record<string, Game>;
+        // Update game in database
+        const { data, error } = await supabaseServer
+            .from('games')
+            .update(updateData)
+            .eq('id', id)
+            .select()
+            .single();
 
-        // Check if game exists
-        if (!currentGames[id]) {
+        if (error) {
+            if (error.code === 'PGRST116') {
+                return NextResponse.json(
+                    { error: "Game not found" },
+                    { status: 404 }
+                );
+            }
+            console.error("Database error:", error);
             return NextResponse.json(
-                { error: "Game not found" },
-                { status: 404 }
+                { error: "Failed to update game" },
+                { status: 500 }
             );
         }
-
-        // Update game with proper type checking
-        currentGames[id] = {
-            ...currentGames[id],
-            ...updateData
-        };
-
-        // Write updated data back to file
-        await fs.writeFile(gamesPath, JSON.stringify(currentGames, null, 2));
 
         return NextResponse.json({
             success: true,
             message: "Game updated successfully",
-            game: currentGames[id]
+            game: data
         });
 
     } catch (error) {
@@ -176,24 +222,19 @@ export async function DELETE(request: Request) {
             );
         }
 
-        // Read current games data
-        const gamesPath = path.join(process.cwd(), "app/dashboard/data/games.json");
-        const fileContent = await fs.readFile(gamesPath, "utf-8");
-        const currentGames = JSON.parse(fileContent) as Record<string, Game>;
+        // Delete game from database
+        const { error } = await supabaseServer
+            .from('games')
+            .delete()
+            .eq('id', id);
 
-        // Check if game exists
-        if (!currentGames[id]) {
+        if (error) {
+            console.error("Database error:", error);
             return NextResponse.json(
-                { error: "Game not found" },
-                { status: 404 }
+                { error: "Failed to delete game" },
+                { status: 500 }
             );
         }
-
-        // Delete game
-        delete currentGames[id];
-
-        // Write updated data back to file
-        await fs.writeFile(gamesPath, JSON.stringify(currentGames, null, 2));
 
         return NextResponse.json({
             success: true,

@@ -1,10 +1,9 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { Game, UserGameData } from '@/lib/types';
+import { UserGameData } from '@/lib/types';
 import { redirect } from 'next/navigation';
 import { calculateGenreStats, calculateGenreStatsByScore } from '@/lib/utils';
 import { GenreTrackerWrapper } from './components/GenreTrackerWrapper';
 import TabbedPanels from './components/TabbedPanels';
-import gamesData from './data/games.json';
 import quips from './data/quip.json';
 import { headers } from 'next/headers';
 import NavBar from '../components/navbar';
@@ -55,11 +54,27 @@ export default async function DashboardPage() {
     user?.emailAddresses?.[0]?.emailAddress?.split('@')[0] ??
     'Player';
 
-    // Get user's games and calculate genre stats
-    const games = gamesData as Record<string, Game>;
-    const userGameDetails = userGames
-        .map(ug => games[ug.gameId])
-        .filter(Boolean);
+    // Fetch game details from API for each user game
+    const userGameDetails = await Promise.all(
+        userGames.map(async (ug) => {
+            try {
+                const gameResponse = await fetch(`${protocol}://${host}/api/games?id=${ug.gameId}`, {
+                    headers: {
+                        Cookie: headersList.get('cookie') || '',
+                    },
+                    cache: 'no-store',
+                });
+                if (gameResponse.ok) {
+                    return await gameResponse.json();
+                }
+                return null;
+            } catch (error) {
+                console.error(`Failed to fetch game ${ug.gameId}:`, error);
+                return null;
+            }
+        })
+    ).then(games => games.filter(Boolean));
+
     const genreStats = calculateGenreStats(userGameDetails);
     const genreStatsByScore = calculateGenreStatsByScore(userGameDetails, userGames);
 
