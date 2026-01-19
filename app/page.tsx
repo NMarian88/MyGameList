@@ -1,11 +1,12 @@
 'use client'
 import {searchGames, getPopularGames, getTopRatedGames} from '@/lib/rawg-api';
+
 import { useState, useEffect,useRef } from 'react';
 import NavBar from './components/navbar';
 import { Gamepad2, Search, Star,Calendar, Plus,Users,ArrowLeft,ArrowRight} from 'lucide-react';
-import { UserButton } from '@clerk/nextjs';
+import { UserButton , useAuth} from '@clerk/nextjs';
 import { Game } from '@/lib/types';
-
+import {useRouter} from 'next/navigation';
 export default function HomePage() {
     const[searchQuery, setSearchQuery] = useState('');
     const[searchResult, setSearchResult] = useState<Game[]>([]);
@@ -16,8 +17,12 @@ export default function HomePage() {
     const[isSearching, setIsSearching] = useState(false);
     const[isLoading, setIsLoading] = useState(false);
     const[showSearch, setShowSearch] = useState(false);
+    const [toastMessage, setToastMessage] = useState<string | null>(null);
+    const [isToastVisible, setIsToastVisible] = useState(false);
     const searchTimeoutRef = useRef<NodeJS.Timeout>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
+    const {userId} = useAuth();
     useEffect(() => {
         fetchGames();
     }, [selectedFilter,currentPage]);
@@ -75,6 +80,37 @@ export default function HomePage() {
     }
     const displayedGames = selectedFilter === 'popular' ? popularGames : topRatedGames;
 
+    const showToastMessage = (message: string) => {
+        setToastMessage(message);
+        setIsToastVisible(true);
+        setTimeout(() => {
+            setIsToastVisible(false);
+            setToastMessage(null);
+        }, 3000); // Hide after 3 seconds
+    };
+    const addToCollection = async (gameId: number, status: string = 'wishlist') => {
+        try {
+            const response = await fetch('/api/user/games', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ gameId, status }),
+            });
+            if (response.ok) {
+                console.log('Game added to collection!');
+                showToastMessage('Game added to collection!');
+                window.dispatchEvent(new CustomEvent('gameAdded'));
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                console.log('Failed to add game');
+                showToastMessage('Failed to add game!');
+            }
+        } catch (error) {
+            console.error('Error adding game:', error);
+            console.log('Error adding game');
+        }
+    };
     return(
        <div className="min-h-screen bg-linear-to-b from-gray-900 to-black text-white">
             <NavBar />
@@ -152,8 +188,9 @@ export default function HomePage() {
                                                        background image found</div>
                                                )}
                                                <div
-                                                   className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity left-75 top-37">
+                                                   className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity left-60 top-35">
                                                    <button
+                                                       onClick={() => addToCollection(game.id)}
                                                        className="absolute p-3 bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-full shadow-lg transition transform:scale-110">
                                                        <Plus size={20}/>
                                                    </button>
@@ -210,6 +247,13 @@ export default function HomePage() {
                    <p className="mt-2">Powered by RAWG Video Games Database API</p>
                </div>
            </footer>
+           {isToastVisible && toastMessage && (
+               <div className="fixed top-20 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
+                   <div className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 shadow-lg max-w-sm ">
+                       <p className="text-white text-sm">{toastMessage}</p>
+                   </div>
+               </div>
+           )}
        </div>
     )
 
