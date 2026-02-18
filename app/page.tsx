@@ -188,10 +188,10 @@ export default function HomePage() {
                                                        background image found</div>
                                                )}
                                                <div
-                                                   className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity left-60 top-35">
+                                                   className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ">
                                                    <button
                                                        onClick={() => addToCollection(game.id)}
-                                                       className="absolute p-3 bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-full shadow-lg transition transform:scale-110">
+                                                       className="absolute bottom-0 right-0 m-2 p-3 bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-full shadow-lg transition transform:scale-110">
                                                        <Plus size={20}/>
                                                    </button>
                                                </div>

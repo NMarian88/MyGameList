@@ -59,3 +59,13 @@ export async function getGameDetails(idOrSlug: number | string): Promise<Game> {
         throw new Error(`Invalid JSON response from RAWG API: ${text.substring(0, 100)}`);
     }
 }
+
+export async function getGameImages(id: number){
+    const response = await fetch(
+        `${BASE_URL}/games/${id}/screenshots?key=${RAWG_API_KEY}`
+    );
+    if(!response.ok){
+        throw new Error('Failed to fetch game images');
+    }
+    return response.json();
+}
