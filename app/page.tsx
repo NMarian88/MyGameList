@@ -7,6 +7,7 @@ import { Gamepad2, Search, Star,Calendar, Plus,Users,ArrowLeft,ArrowRight} from 
 import { UserButton , useAuth} from '@clerk/nextjs';
 import { Game } from '@/lib/types';
 import {useRouter} from 'next/navigation';
+import Link from 'next/link';
 export default function HomePage() {
     const[searchQuery, setSearchQuery] = useState('');
     const[searchResult, setSearchResult] = useState<Game[]>([]);

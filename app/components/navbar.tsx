@@ -118,35 +118,38 @@ export default function NavBar() {
                             {showSearch  && searchResult.length > 0 &&(
                                 <div className="absolute top-full mt-2 w-full bg-gray-800 border border-gray-700 rounded-xl shadow-2xl z-50 max-h-96 overflow-y-auto">
                                     {searchResult.map((game) => (
-                                        <div key={game.id} className="p-4 hover:bg-gray-700 border-b border-gray-700 last:border-b-0 transition group">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center space-x-3">
-                                                    {game.background_image && (
-                                                        <div className={"w-12 h-12 rounded-lg overflow-hidden shrink-0"}>
-                                                            <Image src={game.background_image} alt="game.name" className="w-full h-full object-cover" width={256} height={256} />
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <h3 className="font-semibold">{game.name}</h3>
-                                                        <div className="flex items-center space-x-4 text-sm text-gray-400">
+                                        <Link href={`/game/${game.id}`} key={game.id}>
+                                            <div key={game.id} className="p-4 hover:bg-gray-700 border-b border-gray-700 last:border-b-0 transition group">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center space-x-3">
+                                                        {game.background_image && (
+                                                            <div className={"w-12 h-12 rounded-lg overflow-hidden shrink-0"}>
+                                                                <Image src={game.background_image} alt="game.name" className="w-full h-full object-cover" width={256} height={256} />
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <h3 className="font-semibold">{game.name}</h3>
+                                                            <div className="flex items-center space-x-4 text-sm text-gray-400">
                                                             <span className="flex items-center">
                                                                 <Star size={12} className="mr-1 text-yellow-500"></Star>
                                                                 {game.metacritic}
                                                             </span>
-                                                            {game.released && (
-                                                                <span className="flex items-center">
+                                                                {game.released && (
+                                                                    <span className="flex items-center">
                                                                     <Calendar size={12} className="mr-1"></Calendar>
-                                                                    {new Date(game.released).getFullYear()}
+                                                                        {new Date(game.released).getFullYear()}
                                                                 </span>
-                                                            )}
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
+                                                    <button onClick={(e) =>{ e.preventDefault(); addToCollection(game.id) }} className="p-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition opacity-0 group-hover:opacity-100" title="Add to collection">
+                                                        <Plus size={20}></Plus>
+                                                    </button>
                                                 </div>
-                                                <button onClick={() => addToCollection(game.id)} className="p-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition opacity-0 group-hover:opacity-100" title="Add to collection">
-                                                    <Plus size={20}></Plus>
-                                                </button>
                                             </div>
-                                        </div>
+                                        </Link>
+
                                     ))}
                                 </div>
                             )}
