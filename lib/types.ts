@@ -9,6 +9,16 @@ export interface Game{
     ratings_count?: number;
     metacritic?: number | null;
     playtime?: number;
+    website?: string;
+    saturated_color?: string;
+    developers?: {
+        id: number;
+        name: string;
+    }[];
+    publishers?: {
+        id: number;
+        name: string;
+    }[];
     platforms?: {
         platform: {
             id:number;
