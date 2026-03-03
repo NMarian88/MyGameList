@@ -22,7 +22,7 @@ export default function NavBar() {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [toastMessage, setToastMessage] = useState<string | null>(null);
     const [isToastVisible, setIsToastVisible] = useState(false);
-
+    const searchContainerHide = useRef<HTMLDivElement>(null)
     useEffect(() => {
         if (searchQuery.trim() === '') {
             setSearchResult([]);
@@ -51,7 +51,19 @@ export default function NavBar() {
             }
         };
     }, [searchQuery]);
-
+    useEffect(() => {
+        const handleClick = (event: MouseEvent)=> {
+            if(
+                searchContainerHide.current && !searchContainerHide.current.contains(event.target as Node)
+            ){
+                setShowSearch(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClick);
+        return () => {
+            document.removeEventListener('mousedown', handleClick);
+        };
+    }, []);
     const showToastMessage = (message: string) => {
         setToastMessage(message);
         setIsToastVisible(true);
@@ -98,13 +110,14 @@ export default function NavBar() {
                                 <p className="text-gray-400 text-sm font-bold">Track your gaming collection</p>
                             </div>
                         </Link>
-                        <div className="relative flex-1 max-w-2xl mx-auto">
+                        <div ref={searchContainerHide} className="relative flex-1 max-w-2xl mx-auto">
                             <div className="relative">
                                 <Search className="absolute  left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
+                                    onFocus={() => {if(searchQuery.trim() !== '') setShowSearch(true)}}
                                     placeholder="Search for games..."
                                     className="w-full pl-12 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition placeholder-gray-500"
                                 />
