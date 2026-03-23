@@ -3,7 +3,7 @@ import { useState, useEffect,useRef } from 'react';
 import {searchGames, getPopularGames, getTopRatedGames} from '@/lib/rawg-api';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Gamepad2, Search, Star,Calendar, Plus} from 'lucide-react';
+import { Gamepad2, Search, Star,Calendar, Plus, Users, ChevronDown} from 'lucide-react';
 import { UserButton, useUser } from '@clerk/nextjs';
 import { Game } from '@/lib/types';
 
@@ -22,7 +22,10 @@ export default function NavBar() {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [toastMessage, setToastMessage] = useState<string | null>(null);
     const [isToastVisible, setIsToastVisible] = useState(false);
-
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const [searchType, setSearchType] = useState<SearchType>('games');
+    const searchContainerHide = useRef<HTMLDivElement>(null);
     useEffect(() => {
         if (searchQuery.trim() === '') {
             setSearchResult([]);
@@ -51,14 +54,26 @@ export default function NavBar() {
             }
         };
     }, [searchQuery]);
-
+    useEffect(() => {
+        const HandleClick = (event: MouseEvent) => {
+            if(
+                searchContainerHide.current && !searchContainerHide.current.contains(event.target as Node)
+            ){
+                setShowSearch(false);
+            }
+        };
+        document.addEventListener('mousedown', HandleClick);
+        return () => {
+            document.removeEventListener('mousedown', HandleClick);
+        };
+    }, []);
     const showToastMessage = (message: string) => {
         setToastMessage(message);
         setIsToastVisible(true);
         setTimeout(() => {
             setIsToastVisible(false);
             setToastMessage(null);
-        }, 3000); // Hide after 3 seconds
+        }, 3000);
     };
 
     const addToCollection = async (gameId: number, status: string = 'wishlist') => {
@@ -98,21 +113,57 @@ export default function NavBar() {
                                 <p className="text-gray-400 text-sm font-bold">Track your gaming collection</p>
                             </div>
                         </Link>
-                        <div className="relative flex-1 max-w-2xl mx-auto">
-                            <div className="relative">
-                                <Search className="absolute  left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Search for games..."
-                                    className="w-full pl-12 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition placeholder-gray-500"
-                                />
-                                {isSearching && (
-                                    <div className="absolute right-4 bottom-1 transform -translate-y-1/2">
-                                        <div className="w-5 h-5 border-2 border-gray-400 border-t-purple-500 rounded-full animate-spin"></div>
-                                    </div>
-                                )}
+                        <div ref={searchContainerHide} className="relative flex-1 max-w-2xl mx-auto">
+                            <div className="relative flex">
+                                <div className="relative" ref={dropdownRef}>
+                                    <button onClick={()=> setShowDropdown(!showDropdown)} className="flex items-center space-x-2 px-4 py-3 bg-gray-800 border border-gray-700 rounded-l-xl hover:bg-gray-700 transition">
+                                        {searchType === 'games' ? (<Gamepad2 size={18}/>) : (<Users size={18}/>) }
+                                        <span className="capitalize">{searchType}</span>
+                                        <ChevronDown size={16} className={`transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    {showDropdown && (
+                                        <div className="absolute top-full left-0 mt-1 w-32 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                                            <button onClick={() =>{
+                                                setSearchType('games');
+                                                setShowDropdown(false);
+                                                setSearchQuery('');
+                                                setSearchResult([]);
+                                                setShowSearch(false);
+                                            }} className={`w-full px-4 py-2 text-left hover:bg-gray-700 transition flex items-center space-x-2 ${searchType === 'games' ? 'bg-gray-700 text-purple-400' : ''}`}>
+                                                <Gamepad2 size={16}/>
+                                                <span>Games</span>
+                                            </button>
+                                            <button onClick={() =>{
+                                                setSearchType('users');
+                                                setShowDropdown(false);
+                                                setSearchQuery('');
+                                                setSearchResult([]);
+                                                setShowSearch(false);
+                                            }} className={`w-full px-4 py-2 text-left hover:bg-gray-700 transition flex items-center space-x-2 ${searchType === 'users' ? 'bg-gray-700 text-purple-400' : ''}`}>
+                                                <Users size={16}/>
+                                                <span>Users</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="relative flex-1">
+                                    <Search className="absolute  left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        onFocus={() => {if(searchQuery.trim() !== '') setShowSearch(true)}}
+                                        placeholder={searchType === 'games' ? 'Search for games...' : 'Search for users...'}
+                                        className="w-full pl-12 pr-4 py-3 bg-gray-800 border border-gray-700 border-l-0 rounded-r-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition placeholder-gray-500"
+                                    />
+                                    {isSearching && (
+                                        <div className="absolute right-4 bottom-1 transform -translate-y-1/2">
+                                            <div className="w-5 h-5 border-2 border-gray-400 border-t-purple-500 rounded-full animate-spin"></div>
+                                        </div>
+                                    )}
+
+                                </div>
+
                             </div>
 
                             {showSearch  && searchResult.length > 0 &&(
