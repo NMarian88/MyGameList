@@ -44,6 +44,7 @@ export async function GET(request: Request) {
                 short_screenshots: game.metadata?.short_screenshots || [],
                 ...game.metadata
             };
+            console.log('this came from the database')
             return NextResponse.json(formattedGame);
         }
         
@@ -74,7 +75,7 @@ export async function GET(request: Request) {
             if (upsertError) {
                 console.warn("Could not save game to database:", upsertError);
             }
-            
+            console.log('this came from rawg')
             return NextResponse.json(gameFromApi);
         } catch (error) {
             console.error("Error fetching game from RAWG API:", error);

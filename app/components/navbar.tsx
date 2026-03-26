@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect,useRef } from 'react';
-import {searchGames, getPopularGames, getTopRatedGames} from '@/lib/rawg-api';
+import {searchGames, getPopularGames, getTopRatedGames, getGameDetails} from '@/lib/rawg-api';
 import {searchUsers} from "@/app/actions/user.actions";
 import Link from 'next/link';
 import Image from 'next/image';
@@ -84,26 +84,62 @@ export default function NavBar() {
         }, 3000);
     };
 
-    const addToCollection = async (gameId: number, status: string = 'wishlist') => {
+    const addToCollection = async (game: Game, status: string = 'wishlist') => {
         try {
-            const response = await fetch('/api/user/games', {
+            const fullGame = await getGameDetails(game.id);
+            const gameResponse = await fetch('/api/games', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ gameId, status }),
+                body: JSON.stringify({
+                    id: fullGame.id,
+                    rawg_id: fullGame.id,
+                    name: fullGame.name,
+                    slug: fullGame.slug || `game-${game.id}`,
+                    description: fullGame.description,
+                    background_image: fullGame.background_image || null,
+                    released: fullGame.released ? new Date(fullGame.released).toISOString().split('T')[0] : null,
+                    rating: fullGame.rating || 0,
+                    rating_top: fullGame.rating_top || 0,
+                    ratings_count: fullGame.ratings_count || 0,
+                    metacritic: fullGame.metacritic || null,
+                    playtime:fullGame.playtime || 0,
+                    platforms: fullGame.platforms || [],
+                    genres: fullGame.genres || [],
+                    short_screenshots: game.short_screenshots || [],
+                    metadata:fullGame
+                }),
             });
-            if (response.ok) {
+
+
+            if (!gameResponse.ok && gameResponse.status !== 409) {
+                console.error('Failed to save game to database');
+                showToastMessage('Failed to process game details.');
+                return;
+            }
+
+
+            const userGameResponse = await fetch('/api/user/games', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ gameId: game.id, status }),
+            });
+
+            if (userGameResponse.ok) {
                 console.log('Game added to collection!');
                 showToastMessage('Game added to collection!');
+
                 window.dispatchEvent(new CustomEvent('gameAdded'));
             } else {
-                console.log('Failed to add game');
-                showToastMessage('Failed to add game');
+                console.log('Failed to link game');
+                showToastMessage('Failed to add game to collection.');
             }
         } catch (error) {
             console.error('Error adding game:', error);
-            console.log('Error adding game');
+            showToastMessage('Error adding game.');
         }
     };
 
@@ -205,7 +241,7 @@ export default function NavBar() {
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            <button onClick={(e) =>{ e.preventDefault(); addToCollection(game.id) }} className="p-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition opacity-0 group-hover:opacity-100" title="Add to collection">
+                                                            <button onClick={(e) =>{ e.preventDefault(); addToCollection(game) }} className="p-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition opacity-0 group-hover:opacity-100" title="Add to collection">
                                                                 <Plus size={20}></Plus>
                                                             </button>
                                                         </div>
