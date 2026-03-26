@@ -1,16 +1,18 @@
 'use client'
 import { useState, useEffect,useRef } from 'react';
 import {searchGames, getPopularGames, getTopRatedGames} from '@/lib/rawg-api';
+import {searchUsers} from "@/app/actions/user.actions";
 import Link from 'next/link';
 import Image from 'next/image';
 import { Gamepad2, Search, Star,Calendar, Plus, Users, ChevronDown} from 'lucide-react';
 import { UserButton, useUser } from '@clerk/nextjs';
 import { Game } from '@/lib/types';
-
+import {User} from  '@/app/actions/user.actions';
+type SearchType = 'games' | 'users';
 export default function NavBar() {
     const { isSignedIn } = useUser();
     const[searchQuery, setSearchQuery] = useState('');
-    const[searchResult, setSearchResult] = useState<Game[]>([]);
+    const[searchResult, setSearchResult] = useState<Game[] | User[]>([]);
     const[popularGames, setPopularGames] = useState<Game[]>([]);
     const[topRatedGames, setTopRatedGames] = useState<Game[]>([]);
     const[selectedFilter, setSelectedFilter] = useState<'popular' | 'top-rated'>('popular');
@@ -24,7 +26,7 @@ export default function NavBar() {
     const [isToastVisible, setIsToastVisible] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const [searchType, setSearchType] = useState<SearchType>('games');
+    const [searchType, setSearchType] = useState<'games' | 'users'>('games');
     const searchContainerHide = useRef<HTMLDivElement>(null);
     useEffect(() => {
         if (searchQuery.trim() === '') {
@@ -39,8 +41,14 @@ export default function NavBar() {
         }
         searchTimeoutRef.current = setTimeout(async () => {
             try {
-                const results = await searchGames(searchQuery);
-                setSearchResult(results.results.slice(0, 5));
+                if (searchType === 'games') {
+                    const gameData = await searchGames(searchQuery);
+                    setSearchResult(gameData.results.slice(0, 5));
+                }else{
+                    const userData = await searchUsers(searchQuery);
+                    setSearchResult(userData.slice(0, 5));
+                }
+
             } catch (error) {
                 console.error('Search failed:', error);
             } finally {
@@ -53,7 +61,7 @@ export default function NavBar() {
                 clearTimeout(searchTimeoutRef.current);
             }
         };
-    }, [searchQuery]);
+    }, [searchQuery, searchType]);
     useEffect(() => {
         const HandleClick = (event: MouseEvent) => {
             if(
@@ -168,40 +176,66 @@ export default function NavBar() {
 
                             {showSearch  && searchResult.length > 0 &&(
                                 <div className="absolute top-full mt-2 w-full bg-gray-800 border border-gray-700 rounded-xl shadow-2xl z-50 max-h-96 overflow-y-auto">
-                                    {searchResult.map((game) => (
-                                        <Link href={`/game/${game.id}`} key={game.id}>
-                                            <div key={game.id} className="p-4 hover:bg-gray-700 border-b border-gray-700 last:border-b-0 transition group">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center space-x-3">
-                                                        {game.background_image && (
-                                                            <div className={"w-12 h-12 rounded-lg overflow-hidden shrink-0"}>
-                                                                <Image src={game.background_image} alt="game.name" className="w-full h-full object-cover" width={256} height={256} />
-                                                            </div>
-                                                        )}
-                                                        <div>
-                                                            <h3 className="font-semibold">{game.name}</h3>
-                                                            <div className="flex items-center space-x-4 text-sm text-gray-400">
+                                    {searchResult.map((item) => {
+                                        if(searchType === 'games'){
+                                            const game = item as Game;
+                                            return(
+                                                <Link href={`/game/${game.id}`} key={game.id}>
+                                                    <div key={game.id} className="p-4 hover:bg-gray-700 border-b border-gray-700 last:border-b-0 transition group">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center space-x-3">
+                                                                {game.background_image && (
+                                                                    <div className={"w-12 h-12 rounded-lg overflow-hidden shrink-0"}>
+                                                                        <Image src={game.background_image} alt="game.name" className="w-full h-full object-cover" width={256} height={256} />
+                                                                    </div>
+                                                                )}
+                                                                <div>
+                                                                    <h3 className="font-semibold">{game.name}</h3>
+                                                                    <div className="flex items-center space-x-4 text-sm text-gray-400">
                                                             <span className="flex items-center">
                                                                 <Star size={12} className="mr-1 text-yellow-500"></Star>
                                                                 {game.metacritic}
                                                             </span>
-                                                                {game.released && (
-                                                                    <span className="flex items-center">
+                                                                        {game.released && (
+                                                                            <span className="flex items-center">
                                                                     <Calendar size={12} className="mr-1"></Calendar>
-                                                                        {new Date(game.released).getFullYear()}
+                                                                                {new Date(game.released).getFullYear()}
                                                                 </span>
-                                                                )}
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <button onClick={(e) =>{ e.preventDefault(); addToCollection(game.id) }} className="p-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition opacity-0 group-hover:opacity-100" title="Add to collection">
+                                                                <Plus size={20}></Plus>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </Link>
+                                            );
+                                        }
+                                        if(searchType === 'users'){
+                                            const user = item as User;
+                                            return(
+                                                <Link href={`/profile/${user.id}`} key={user.id}>
+                                                    <div className="p-4 hover:bg-gray-700 border-b border-gray-700 last:border-b-0 transition group">
+                                                        <div className="flex items-center space-x-3">
+                                                            {user.imageUrl && (
+                                                                // Made the user image rounded-full (a circle) to differentiate from games
+                                                                <div className="w-12 h-12 rounded-full overflow-hidden shrink-0">
+                                                                    <Image src={user.imageUrl} alt={user.username} className="w-full h-full object-cover" width={256} height={256} />
+                                                                </div>
+                                                            )}
+                                                            <div>
+                                                                <h3 className="font-semibold">{user.username}</h3>
+
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <button onClick={(e) =>{ e.preventDefault(); addToCollection(game.id) }} className="p-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition opacity-0 group-hover:opacity-100" title="Add to collection">
-                                                        <Plus size={20}></Plus>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </Link>
-
-                                    ))}
+                                                </Link>
+                                            );
+                                        }
+                                        return null;
+                                    })}
                                 </div>
                             )}
                         </div>

@@ -177,62 +177,65 @@ export default function HomePage() {
                                 style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
                                <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6 min-w-full">
                                    {displayedGames.map((game) => (
-                                       <div key={game.id}
-                                            className="bg-gray-800 backdrop-blur-sm rounded-2xl border border-gray-700 overflow-hidden group hover:border-purple-500 transition-all hover:scale-[1.02]">
-                                           <div className="relative h-48 overflow:hidden">
-                                               {game.background_image ? (
-                                                   <img src={game.background_image} alt={game.name}
-                                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
-                                               ) : (
+                                       <Link href={`/game/${game.id}`} key={game.id}>
+                                           <div key={game.id}
+                                                className="bg-gray-800 backdrop-blur-sm rounded-2xl border border-gray-700 overflow-hidden group hover:border-purple-500 transition-all hover:scale-[1.02]">
+                                               <div className="relative h-48 overflow:hidden">
+                                                   {game.background_image ? (
+                                                       <img src={game.background_image} alt={game.name}
+                                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
+                                                   ) : (
+                                                       <div
+                                                           className="bg-linear-to-br from-purple-800 to-blue-900 items-center justify-center">No
+                                                           background image found</div>
+                                                   )}
                                                    <div
-                                                       className="bg-linear-to-br from-purple-800 to-blue-900 items-center justify-center">No
-                                                       background image found</div>
-                                               )}
-                                               <div
-                                                   className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ">
-                                                   <button
-                                                       onClick={() => addToCollection(game.id)}
-                                                       className="absolute bottom-0 right-0 m-2 p-3 bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-full shadow-lg transition transform:scale-110">
-                                                       <Plus size={20}/>
-                                                   </button>
+                                                       className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ">
+                                                       <button
+                                                           onClick={(e) =>{ e.preventDefault(); addToCollection(game.id)}}
+                                                           className="absolute bottom-0 right-0 m-2 p-3 bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-full shadow-lg transition transform:scale-110">
+                                                           <Plus size={20}/>
+                                                       </button>
+                                                   </div>
                                                </div>
-                                           </div>
-                                           <div className="p-4">
-                                               <h3 className="font-bold text-lg mb-2 truncate">{game.name}</h3>
-                                               <div className="flex items-center justify-between mb-2 text-sm">
-                                                   <div className="flex items-center space-x-2">
-                                                       <div className="flex items-center ">
-                                                           <Star size={20} className="text-yellow-400 mr-1"/>
-                                                           <span>{game.rating.toFixed(1)}</span>
-                                                       </div>
-                                                       {game.metacritic && (
-                                                           <div
-                                                               className={`px-2 py-1 rounded ${game.metacritic >= 75 ? "bg-green-800 text-green-400" : game.metacritic >= 50 ? `bg-yellow-500/50 text-yellow-400` : `bg-red-600/50 text-red-400`}`}>
-                                                               {game.metacritic}
+                                               <div className="p-4">
+                                                   <h3 className="font-bold text-lg mb-2 truncate">{game.name}</h3>
+                                                   <div className="flex items-center justify-between mb-2 text-sm">
+                                                       <div className="flex items-center space-x-2">
+                                                           <div className="flex items-center ">
+                                                               <Star size={20} className="text-yellow-400 mr-1"/>
+                                                               <span>{game.rating.toFixed(1)}</span>
                                                            </div>
+                                                           {game.metacritic && (
+                                                               <div
+                                                                   className={`px-2 py-1 rounded ${game.metacritic >= 75 ? "bg-green-800 text-green-400" : game.metacritic >= 50 ? `bg-yellow-500/50 text-yellow-400` : `bg-red-600/50 text-red-400`}`}>
+                                                                   {game.metacritic}
+                                                               </div>
+                                                           )}
+                                                       </div>
+                                                       {game.released && (
+                                                           <span
+                                                               className="text-gray-400">{new Date(game.released).getFullYear()}</span>
                                                        )}
                                                    </div>
-                                                   {game.released && (
-                                                       <span
-                                                           className="text-gray-400">{new Date(game.released).getFullYear()}</span>
-                                                   )}
-                                               </div>
-                                               <div className="flex flex-wrap gap-2">
-                                                   {game.genres.slice(0, 2).map((genre) => (
-                                                       <span key={genre.id}
-                                                             className="px-2 py-1 text-xs text-gray-300">
+                                                   <div className="flex flex-wrap gap-2">
+                                                       {game.genres.slice(0, 2).map((genre) => (
+                                                           <span key={genre.id}
+                                                                 className="px-2 py-1 text-xs text-gray-300">
                                                             {genre.name}
                                                         </span>
-                                                   ))}
-                                               </div>
-                                               {game.platforms.slice(0, 3).map((platform, index) => (
-                                                   <span key={index} className="px-2 py-1 text-xs text-gray-300">
+                                                       ))}
+                                                   </div>
+                                                   {game.platforms.slice(0, 3).map((platform, index) => (
+                                                       <span key={index} className="px-2 py-1 text-xs text-gray-300">
                                                         {platform.platform.name}
                                                     </span>
-                                               ))}
+                                                   ))}
 
+                                               </div>
                                            </div>
-                                       </div>
+                                       </Link>
+
 
                                    ))}
                                </div>
