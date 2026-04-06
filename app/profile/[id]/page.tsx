@@ -7,7 +7,7 @@ import quips from "@/app/dashboard/data/quip.json";
 import { calculateGenreStats, calculateGenreStatsByScore } from "@/lib/utils";
 import { GenreTrackerWrapper } from "@/app/dashboard/components/GenreTrackerWrapper";
 import TabbedPanels from "@/app/dashboard/components/TabbedPanels";
-
+//vercel
 const quip = quips[Math.floor(Math.random() * quips.length)];
 
 export default async function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
