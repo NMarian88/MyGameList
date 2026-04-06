@@ -1,5 +1,5 @@
 'use client'
-import {searchGames, getPopularGames, getTopRatedGames} from '@/lib/rawg-api';
+import {searchGames, getPopularGames, getTopRatedGames, getGameDetails} from '@/lib/rawg-api';
 
 import { useState, useEffect,useRef } from 'react';
 import NavBar from './components/navbar';
@@ -89,27 +89,62 @@ export default function HomePage() {
             setToastMessage(null);
         }, 3000); // Hide after 3 seconds
     };
-    const addToCollection = async (gameId: number, status: string = 'wishlist') => {
+    const addToCollection = async (game: Game, status: string = 'wishlist') => {
         try {
-            const response = await fetch('/api/user/games', {
+            const fullGame = await getGameDetails(game.id);
+            const gameResponse = await fetch('/api/games', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ gameId, status }),
+                body: JSON.stringify({
+                    id: fullGame.id,
+                    rawg_id: fullGame.id,
+                    name: fullGame.name,
+                    slug: fullGame.slug || `game-${game.id}`,
+                    description: fullGame.description,
+                    background_image: fullGame.background_image || null,
+                    released: fullGame.released ? new Date(fullGame.released).toISOString().split('T')[0] : null,
+                    rating: fullGame.rating || 0,
+                    rating_top: fullGame.rating_top || 0,
+                    ratings_count: fullGame.ratings_count || 0,
+                    metacritic: fullGame.metacritic || null,
+                    playtime:fullGame.playtime || 0,
+                    platforms: fullGame.platforms || [],
+                    genres: fullGame.genres || [],
+                    short_screenshots: game.short_screenshots || [],
+                    metadata:fullGame
+                }),
             });
-            if (response.ok) {
+
+
+            if (!gameResponse.ok && gameResponse.status !== 409) {
+                console.error('Failed to save game to database');
+                showToastMessage('Failed to process game details.');
+                return;
+            }
+
+
+            const userGameResponse = await fetch('/api/user/games', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ gameId: game.id, status }),
+            });
+
+            if (userGameResponse.ok) {
                 console.log('Game added to collection!');
                 showToastMessage('Game added to collection!');
+
                 window.dispatchEvent(new CustomEvent('gameAdded'));
-                window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
-                console.log('Failed to add game');
-                showToastMessage('Failed to add game!');
+                console.log('Failed to link game');
+                showToastMessage('Failed to add game to collection.');
             }
         } catch (error) {
             console.error('Error adding game:', error);
-            console.log('Error adding game');
+            showToastMessage('Error adding game.');
         }
     };
     return(
@@ -192,7 +227,7 @@ export default function HomePage() {
                                                    <div
                                                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ">
                                                        <button
-                                                           onClick={(e) =>{ e.preventDefault(); addToCollection(game.id)}}
+                                                           onClick={(e) =>{ e.preventDefault(); addToCollection(game)}}
                                                            className="absolute bottom-0 right-0 m-2 p-3 bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-full shadow-lg transition transform:scale-110">
                                                            <Plus size={20}/>
                                                        </button>

@@ -11,9 +11,10 @@ interface GameModalProps {
     isOpen: boolean;
     onClose: () => void;
     onStatusChange?: () => void;
+    isReadOnly?: boolean;
 }
 
-export default function GameModal({ game, userGameData, isOpen, onClose, onStatusChange }: GameModalProps) {
+export default function GameModal({ game, userGameData, isOpen, onClose, onStatusChange, isReadOnly = false }: GameModalProps) {
     // Status editing state
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -286,7 +287,16 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
 
     const genres = game.genres?.map(g => g.name).join(', ') || 'N/A';
     const platforms = game.platforms?.map(p => p.platform.name).join(', ') || 'N/A';
-
+    let safeScreenshots: any[] = [];
+    try {
+        if (Array.isArray(game.short_screenshots)) {
+            safeScreenshots = game.short_screenshots;
+        } else if (typeof game.short_screenshots === 'string') {
+            safeScreenshots = JSON.parse(game.short_screenshots);
+        }
+    } catch (e) {
+        console.error("Could not parse screenshots");
+    }
     const deleteFromCollection = async() => {
         if (!confirm("Are you sure you want to remove this game from your collection? This cannot be undone.")) {
             return;
@@ -382,7 +392,7 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                                     </button>
                                     
                                     {/* Status Dropdown */}
-                                    {isStatusDropdownOpen && (
+                                    {isStatusDropdownOpen && !isReadOnly && (
                                         <div className="absolute top-full left-0 mt-1 bg-gray-800 border border-gray-700 rounded shadow-lg z-10 min-w-30">
                                             {statusOptions.map((option) => (
                                                 <button
@@ -402,31 +412,32 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-gray-400">Your Score:</span>
-                                { (localLatestReview?.reviewScore !== undefined && localLatestReview?.reviewScore !== null) || isEditingScore ? (
+                                { (localLatestReview?.reviewScore !== undefined && localLatestReview?.reviewScore !== null) || isEditingScore ?(
                                     <>
                                         {/* Display mode */}
-                                        {!isEditingScore && localLatestReview?.reviewScore !== undefined && (
+                                        {!isEditingScore && localLatestReview?.reviewScore !== undefined &&  (
                                             <div className="flex items-center gap-2">
                                                 <span
-                                                    onClick={() => setIsEditingScore(true)}
-                                                    role="button"
                                                     tabIndex={0}
                                                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setIsEditingScore(true); e.preventDefault(); } }}
                                                     className={`px-3 py-1 ${getScoreClass(localLatestReview.reviewScore)} text-white rounded text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
                                                 >
                                                     {localLatestReview.reviewScore}/10
                                                 </span>
-                                                <button
-                                                    onClick={() => setIsEditingScore(true)}
-                                                    className="text-sm text-gray-300 hover:text-white px-2 py-1 rounded bg-gray-800/40 border border-gray-700"
-                                                >
-                                                    Edit
-                                                </button>
+                                                {!isReadOnly && (
+                                                    <button
+                                                        onClick={() => setIsEditingScore(true)}
+                                                        className="text-sm text-gray-300 hover:text-white px-2 py-1 rounded bg-gray-800/40 border border-gray-700"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                )}
+
                                             </div>
                                         )}
 
                                         {/* Edit mode */}
-                                        {isEditingScore && (
+                                        {isEditingScore && !isReadOnly &&(
                                             <div className="flex items-center gap-2">
                                                 <input
                                                     ref={inputRef}
@@ -493,11 +504,11 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                     )}
 
                     {/* Screenshots */}
-                    {game.short_screenshots && game.short_screenshots.length > 1 && (
+                    {safeScreenshots.length > 1 && (
                         <div>
                             <h3 className="text-lg font-semibold text-white mb-3">Screenshots</h3>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                {game.short_screenshots.slice(1, 7).map((screenshot) => (
+                                {safeScreenshots.slice(1, 7).map((screenshot: any) => (
                                     <div key={screenshot.id} className="relative h-32 rounded overflow-hidden">
                                         <Image 
                                             src={screenshot.image}
@@ -514,8 +525,8 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                     {/* User Review */}
                     <div className="pt-4 border-t border-gray-700">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-white mb-3">Your Review</h3>
-                            {userGameData && (
+                            <h3 className="text-lg font-semibold text-white mb-3">Review</h3>
+                            {userGameData && !isReadOnly && (
                                 <button
                                     onClick={deleteFromCollection}
                                     disabled={isDeleting}
@@ -583,17 +594,21 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
 
                                     </div>
                                 )}
-                                {localLatestReview?.reviewedAt && (
+                                {localLatestReview?.reviewedAt && !isReadOnly &&(
                                     <p className="text-sm text-gray-500 mt-2">
                                         Reviewed on {new Date(localLatestReview.reviewedAt).toLocaleDateString()}
                                     </p>
                                 )}
                             </>
                         ) : (
+                                <>
+                                    {!isReadOnly &&(
+                                        <button onClick={() => setIsEditingReview(true)} className="text-sm text-gray-300 hover:text-white px-2 py-1 rounded bg-gray-800/40 border border-gray-700">
+                                            Add Review
+                                        </button>
+                                    )}
+                                </>
 
-                                <button onClick={() => setIsEditingReview(true)} className="text-sm text-gray-300 hover:text-white px-2 py-1 rounded bg-gray-800/40 border border-gray-700">
-                                    Add Review
-                                </button>
 
 
 
