@@ -239,7 +239,10 @@ export default function HomePage() {
                                                        <div className="flex items-center space-x-2">
                                                            <div className="flex items-center ">
                                                                <Star size={20} className="text-yellow-400 mr-1"/>
-                                                               <span>{game.rating.toFixed(1)}</span>
+                                                               {game.rating && (
+                                                                   <span>{game.rating.toFixed(1)}</span>
+                                                               )}
+
                                                            </div>
                                                            {game.metacritic && (
                                                                <div
@@ -254,14 +257,14 @@ export default function HomePage() {
                                                        )}
                                                    </div>
                                                    <div className="flex flex-wrap gap-2">
-                                                       {game.genres.slice(0, 2).map((genre) => (
+                                                       {game.genres && game.genres.slice(0, 2).map((genre) => (
                                                            <span key={genre.id}
                                                                  className="px-2 py-1 text-xs text-gray-300">
                                                             {genre.name}
                                                         </span>
                                                        ))}
                                                    </div>
-                                                   {game.platforms.slice(0, 3).map((platform, index) => (
+                                                   {game.platforms && game.platforms.slice(0, 3).map((platform, index) => (
                                                        <span key={index} className="px-2 py-1 text-xs text-gray-300">
                                                         {platform.platform.name}
                                                     </span>
