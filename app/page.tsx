@@ -8,6 +8,8 @@ import { UserButton , useAuth} from '@clerk/nextjs';
 import { Game } from '@/lib/types';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
+import {auth} from "@clerk/nextjs/server";
+import {isReactLargeShellError} from "next/dist/server/app-render/react-large-shell-error";
 export default function HomePage() {
     const[searchQuery, setSearchQuery] = useState('');
     const[searchResult, setSearchResult] = useState<Game[]>([]);
@@ -23,10 +25,15 @@ export default function HomePage() {
     const searchTimeoutRef = useRef<NodeJS.Timeout>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
-    const {userId} = useAuth();
+    const {isLoaded, userId} = useAuth();
     useEffect(() => {
         fetchGames();
     }, [selectedFilter,currentPage]);
+    useEffect(() => {
+        if(isLoaded && !userId){
+            router.push('/sign-in')
+        }
+    }, [isLoaded, userId, router]);
     useEffect(() => {
         if (searchQuery.trim() === '') {
             setSearchResult([]);
@@ -210,12 +217,12 @@ export default function HomePage() {
                            <div ref={scrollContainerRef}
                                 className="flex overflow-x-auto scrollbar-hide space-x-6 pb-6 scroll-smooth"
                                 style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
-                               <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6 min-w-full">
+                               <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6 min-w-full p-1">
                                    {displayedGames.map((game) => (
                                        <Link href={`/game/${game.id}`} key={game.id}>
                                            <div key={game.id}
-                                                className="bg-gray-800 backdrop-blur-sm rounded-2xl border border-gray-700 overflow-hidden group hover:border-purple-500 transition-all hover:scale-[1.02]">
-                                               <div className="relative h-48 overflow:hidden">
+                                                className="bg-gray-800 backdrop-blur-sm rounded-2xl border border-gray-700 overflow-hidden group hover:border-purple-500 transition-all hover:scale-[1.02] ">
+                                               <div className="relative h-48 overflow-hidden">
                                                    {game.background_image ? (
                                                        <img src={game.background_image} alt={game.name}
                                                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
@@ -228,7 +235,7 @@ export default function HomePage() {
                                                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ">
                                                        <button
                                                            onClick={(e) =>{ e.preventDefault(); addToCollection(game)}}
-                                                           className="absolute bottom-0 right-0 m-2 p-3 bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-full shadow-lg transition transform:scale-110">
+                                                           className="absolute bottom-0 right-0 m-2 p-3 bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-full shadow-lg transition hover:scale-110">
                                                            <Plus size={20}/>
                                                        </button>
                                                    </div>
@@ -271,6 +278,7 @@ export default function HomePage() {
                                                    ))}
 
                                                </div>
+
                                            </div>
                                        </Link>
 
@@ -278,6 +286,19 @@ export default function HomePage() {
                                    ))}
                                </div>
                            </div>
+                       </div>
+                       <div className="flex items-center space-x-4 justify-end">
+                           <button onClick={PrevPage} disabled={currentPage === 1 || isLoading}
+                                   className={`p-2 rounded-lg transition ${currentPage === 1 || isLoading ? `bg-gray-800 text-gray-600 cursor-not-allowed` : `bg-gray-800 hover:bg-gray-700`}`}>
+                               <ArrowLeft size={20}/>
+                           </button>
+                           <span className="text-gray-300 font-medium">
+                           Page <span className="text-purple-400">{currentPage}</span>
+                       </span>
+                           <button onClick={NextPage} disabled={isLoading}
+                                   className={`p-2 rounded-lg transition ${isLoading ? `bg-gray-800 text-gray-600 cursor-not-allowed` : `bg-gray-800 hover:bg-gray-700`}`}>
+                               <ArrowRight size={20}/>
+                           </button>
                        </div>
                    </>
                )

@@ -16,6 +16,8 @@ export default async function DashboardPage() {
     }
 
     const user = await currentUser();
+
+    const steamId = user?.publicMetadata?.steamId as string | undefined;
     const displayName = user?.firstName ?? user?.username ?? 'Player';
 
     const { data: rawUserGames, error: dbError } = await supabaseServer
@@ -95,6 +97,20 @@ export default async function DashboardPage() {
                         </h1>
                         <p className="text-gray-300 italic mt-2">{quip}</p>
                     </div>
+                    {steamId ? (
+                        <p></p>
+                    ) : (
+                        <a
+                            href="/api/steam/login"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-[#171a21] hover:bg-[#2a475e] text-white font-medium rounded shadow transition-colors border border-[#66c0f4]/30"
+                        >
+
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                                <path d="M11.979 0C5.353 0 0 5.373 0 12c0 2.247.625 4.35 1.746 6.19l5.248-7.391a3.585 3.585 0 01-1.391-2.736c0-1.986 1.616-3.602 3.602-3.602 1.986 0 3.602 1.616 3.602 3.602 0 1.696-1.178 3.12-2.766 3.496l-3.327 4.686c.646.128 1.314.195 2.001.195 6.626 0 12-5.373 12-12S18.605 0 11.979 0zm-2.775 10.803c0-1.071.872-1.943 1.943-1.943 1.071 0 1.943.872 1.943 1.943 0 1.071-.872 1.943-1.943 1.943-1.071 0-1.943-.872-1.943-1.943zm-2.164 4.542l2.366-3.332a3.565 3.565 0 001.815.492l1.644 4.743c-1.378-.344-2.585-1.106-3.486-2.146-.076-.089-.15-.18-.223-.272l-2.116-.547z" />
+                            </svg>
+                            Link Steam Account
+                        </a>
+                    )}
 
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 md:auto-rows-fr">
@@ -129,6 +145,20 @@ export default async function DashboardPage() {
                             initialGames={combinedGames}
                             isReadOnly={false}
                         />
+                    </div>
+                    {/* User Info (for debugging) */}
+                    <div className="mt-2 p-6 bg-gray-900/50  border border-gray-800">
+                        <h3 className="text-lg font-semibold mb-4">Your Profile Info</h3>
+                        <div className="text-sm text-gray-300 space-y-2">
+                            <p>User ID: {userId}</p>
+
+                            {/* Check if they have a Steam ID, and display it! */}
+                            {steamId ? (
+                                <p className="text-green-400">Linked Steam ID: {steamId}</p>
+                            ) : (
+                                <p className="text-gray-500 italic">No Steam account linked yet.</p>
+                            )}
+                        </div>
                     </div>
                 </div>
             </main>

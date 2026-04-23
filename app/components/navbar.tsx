@@ -148,6 +148,7 @@ export default function NavBar() {
             <nav className="border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50">
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex  justify-between gap-4">
+
                         <Link href="/" className="flex items-center space-x-3 group">
                             <div className="p-2 bg-linear-to-br from-purple-600 to-blue-600 rounded-lg group-hover:scale-105 transition-transform">
                                 <Gamepad2 size={28}/>

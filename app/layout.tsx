@@ -3,6 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from '@clerk/nextjs';
 import { Toaster } from 'sonner';
+import { PostHogProvider } from './components/PostHogProvider';
+import { PostHogPageView } from './components/PostHogPageView';
+import { Suspense } from 'react';
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -25,14 +28,19 @@ export default function RootLayout({
 }>) {
   return (
       <ClerkProvider>
-          <html lang="en">
-            <body
-              className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-            >
+        <html lang="en">
+          <body
+            className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          >
+          <PostHogProvider>
+            <Suspense fallback={null}>
+              <PostHogPageView />
+            </Suspense>
             {children}
-            <Toaster position="bottom-right" theme="dark" />
-            </body>
-          </html>
+          </PostHogProvider>
+          <Toaster position="bottom-right" theme="dark" />
+          </body>
+        </html>
       </ClerkProvider>
 
   );

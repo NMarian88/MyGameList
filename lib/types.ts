@@ -34,6 +34,14 @@ export interface Game{
         image: string;
     }[];
     [key: string]: unknown; // Allow additional RAWG API fields
+    stores?: {
+        url: string;
+        store: {
+            id: number;
+            slug: string;
+            name: string;
+        }
+    }[];
 }
 
 export interface UserData {

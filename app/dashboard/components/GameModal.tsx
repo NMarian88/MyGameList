@@ -4,7 +4,8 @@ import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { X, ChevronDown,Trash2 } from 'lucide-react';
 import { Game, UserGameData } from '@/lib/types';
-
+import SteamAchievements from './SteamAchievements';
+import { useUser } from '@clerk/nextjs';
 interface GameModalProps {
     game: Game;
     userGameData?: UserGameData;
@@ -32,6 +33,8 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
     const [isUpdatingReview, setIsUpdatingReview] = useState(false);
     const [reviewInput, setReviewInput] = useState<string | undefined>(userGameData?.reviews?.[userGameData.reviews.length - 1]?.reviewText);
     const reviewRef = useRef<HTMLTextAreaElement | null>(null);
+    const { user } = useUser();
+    const steamId = user?.publicMetadata?.steamId as string | undefined;
 
     // Sync local latest review, score input and review input when incoming prop changes
     useEffect(() => {
@@ -502,7 +505,10 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                             />
                         </div>
                     )}
-
+                    {/* Steam Achievements */}
+                    {steamId && game.id && (
+                        <SteamAchievements steamId={steamId} rawgId={game.id} />
+                    )}
                     {/* Screenshots */}
                     {safeScreenshots.length > 1 && (
                         <div>
