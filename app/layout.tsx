@@ -6,6 +6,7 @@ import { Toaster } from 'sonner';
 import { PostHogProvider } from './components/PostHogProvider';
 import { PostHogPageView } from './components/PostHogPageView';
 import { Suspense } from 'react';
+import AIWidget from './components/AIWidget';
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -37,6 +38,7 @@ export default function RootLayout({
               <PostHogPageView />
             </Suspense>
             {children}
+            <AIWidget/>
           </PostHogProvider>
           <Toaster position="bottom-right" theme="dark" />
           </body>
