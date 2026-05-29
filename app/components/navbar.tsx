@@ -35,7 +35,7 @@ export default function NavBar() {
     const [isToastVisible, setIsToastVisible] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const [searchType, setSearchType] = useState<'games' | 'users'>('games');
+    const [searchType, setSearchType] = useState<'games' | 'users' | 'communities'>('games');
     const searchContainerHide = useRef<HTMLDivElement>(null);
     useEffect(() => {
         if (searchQuery.trim() === '') {
