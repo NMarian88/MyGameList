@@ -4,15 +4,24 @@ import {searchGames, getPopularGames, getTopRatedGames, getGameDetails} from '@/
 import {searchUsers} from "@/app/actions/user.actions";
 import Link from 'next/link';
 import Image from 'next/image';
-import { Gamepad2, Search, Star,Calendar, Plus, Users, ChevronDown} from 'lucide-react';
+import { Gamepad2, Search, Star,Calendar, Plus, Users, ChevronDown, Globe} from 'lucide-react';
 import { UserButton, useUser } from '@clerk/nextjs';
 import { Game } from '@/lib/types';
 import {User} from  '@/app/actions/user.actions';
-type SearchType = 'games' | 'users';
+
+interface CommunityResult {
+    id: string;
+    name: string;
+    slug: string;
+    description: string;
+    is_private: boolean;
+}
+
+type SearchType = 'games' | 'users' | 'communities';
 export default function NavBar() {
     const { isSignedIn } = useUser();
     const[searchQuery, setSearchQuery] = useState('');
-    const[searchResult, setSearchResult] = useState<Game[] | User[]>([]);
+    const[searchResult, setSearchResult] = useState<Game[] | User[] | CommunityResult[]>([]);
     const[popularGames, setPopularGames] = useState<Game[]>([]);
     const[topRatedGames, setTopRatedGames] = useState<Game[]>([]);
     const[selectedFilter, setSelectedFilter] = useState<'popular' | 'top-rated'>('popular');
@@ -44,9 +53,13 @@ export default function NavBar() {
                 if (searchType === 'games') {
                     const gameData = await searchGames(searchQuery);
                     setSearchResult(gameData.results.slice(0, 5));
-                }else{
+                } else if (searchType === 'users') {
                     const userData = await searchUsers(searchQuery);
                     setSearchResult(userData.slice(0, 5));
+                } else {
+                    const res = await fetch(`/api/community?q=${encodeURIComponent(searchQuery)}`);
+                    const data = await res.json();
+                    setSearchResult((data.communities || []).slice(0, 5));
                 }
 
             } catch (error) {
@@ -162,7 +175,7 @@ export default function NavBar() {
                             <div className="relative flex">
                                 <div className="relative" ref={dropdownRef}>
                                     <button onClick={()=> setShowDropdown(!showDropdown)} className="flex items-center space-x-2 px-4 py-3 bg-gray-800 border border-gray-700 rounded-l-xl hover:bg-gray-700 transition">
-                                        {searchType === 'games' ? (<Gamepad2 size={18}/>) : (<Users size={18}/>) }
+                                        {searchType === 'games' ? (<Gamepad2 size={18}/>) : searchType === 'users' ? (<Users size={18}/>) : (<Globe size={18}/>)}
                                         <span className="capitalize">{searchType}</span>
                                         <ChevronDown size={16} className={`transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
                                     </button>
@@ -188,6 +201,16 @@ export default function NavBar() {
                                                 <Users size={16}/>
                                                 <span>Users</span>
                                             </button>
+                                            <button onClick={() =>{
+                                                setSearchType('communities');
+                                                setShowDropdown(false);
+                                                setSearchQuery('');
+                                                setSearchResult([]);
+                                                setShowSearch(false);
+                                            }} className={`w-full px-4 py-2 text-left hover:bg-gray-700 transition flex items-center space-x-2 ${searchType === 'communities' ? 'bg-gray-700 text-purple-400' : ''}`}>
+                                                <Globe size={16}/>
+                                                <span>Communities</span>
+                                            </button>
                                         </div>
                                     )}
                                 </div>
@@ -198,7 +221,7 @@ export default function NavBar() {
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         onFocus={() => {if(searchQuery.trim() !== '') setShowSearch(true)}}
-                                        placeholder={searchType === 'games' ? 'Search for games...' : 'Search for users...'}
+                                        placeholder={searchType === 'games' ? 'Search for games...' : searchType === 'users' ? 'Search for users...' : 'Search for communities...'}
                                         className="w-full pl-12 pr-4 py-3 bg-gray-800 border border-gray-700 border-l-0 rounded-r-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition placeholder-gray-500"
                                     />
                                     {isSearching && (
@@ -257,14 +280,30 @@ export default function NavBar() {
                                                     <div className="p-4 hover:bg-gray-700 border-b border-gray-700 last:border-b-0 transition group">
                                                         <div className="flex items-center space-x-3">
                                                             {user.imageUrl && (
-                                                                // Made the user image rounded-full (a circle) to differentiate from games
                                                                 <div className="w-12 h-12 rounded-full overflow-hidden shrink-0">
                                                                     <Image src={user.imageUrl} alt={user.username} className="w-full h-full object-cover" width={256} height={256} />
                                                                 </div>
                                                             )}
                                                             <div>
                                                                 <h3 className="font-semibold">{user.username}</h3>
-
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </Link>
+                                            );
+                                        }
+                                        if(searchType === 'communities'){
+                                            const community = item as CommunityResult;
+                                            return(
+                                                <Link href={`/community/${community.slug}`} key={community.id}>
+                                                    <div className="p-4 hover:bg-gray-700 border-b border-gray-700 last:border-b-0 transition">
+                                                        <div className="flex items-center space-x-3">
+                                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center font-bold shrink-0">
+                                                                {community.name[0].toUpperCase()}
+                                                            </div>
+                                                            <div>
+                                                                <h3 className="font-semibold">{community.name}</h3>
+                                                                <p className="text-sm text-gray-400 truncate max-w-xs">{community.description}</p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -276,7 +315,7 @@ export default function NavBar() {
                                 </div>
                             )}
                         </div>
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-3">
                             <Link href="/dashboard" className="px-4 py-2 bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg transition font-semibold whitespace-nowrap">
                                 Dashboard
                             </Link>

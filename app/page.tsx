@@ -3,7 +3,7 @@ import {searchGames, getPopularGames, getTopRatedGames, getGameDetails} from '@/
 
 import { useState, useEffect,useRef } from 'react';
 import NavBar from './components/navbar';
-import { Gamepad2, Search, Star,Calendar, Plus,Users,ArrowLeft,ArrowRight} from 'lucide-react';
+import { Gamepad2, Search, Star,Calendar, Plus,Users,ArrowLeft,ArrowRight, Globe} from 'lucide-react';
 import { UserButton , useAuth} from '@clerk/nextjs';
 import { Game } from '@/lib/types';
 import {useRouter} from 'next/navigation';
@@ -166,28 +166,34 @@ export default function HomePage() {
                        Browse thousands of games and add them to your personal collection
                    </p>
                </div>
-               <div className="flex items-center justify-between mb-8 gap-4">
-                   <div className="inline-flex rounded-lg bg-gray-800 p-1">
-                       <button onClick={() => {
-                           setSelectedFilter('popular');
-                           setCurrentPage(1);
-                       }}
-                               className={`px-6 py-3 rounded-lg transition fond-semibold ${selectedFilter === 'popular' ? 'bg-gradient-to-r from-purple-600 to-blue-600' : 'hover:bg-gray-700'}`}>
-                           <div className="flex items-center space-x-2">
-                               <Users size={20}></Users>
-                               <span>Most Popular</span>
-                           </div>
-                       </button>
-                       <button onClick={() => {
-                           setSelectedFilter('top-rated');
-                           setCurrentPage(1);
-                       }}
-                               className={`px-6 py-3 rounded-lg transition fond-semibold ${selectedFilter === 'top-rated' ? 'bg-gradient-to-r from-purple-600 to-blue-600' : 'hover:bg-gray-700'}`}>
-                           <div className="flex items-center space-x-2">
-                               <Star size={20}></Star>
-                               <span>Top-Rated</span>
-                           </div>
-                       </button>
+               <div className="flex items-center justify-between mb-8 gap-4 flex-wrap">
+                   <div className="flex items-center gap-3 flex-wrap">
+                       <div className="inline-flex rounded-lg bg-gray-800 p-1">
+                           <button onClick={() => {
+                               setSelectedFilter('popular');
+                               setCurrentPage(1);
+                           }}
+                                   className={`px-6 py-3 rounded-lg transition fond-semibold ${selectedFilter === 'popular' ? 'bg-gradient-to-r from-purple-600 to-blue-600' : 'hover:bg-gray-700'}`}>
+                               <div className="flex items-center space-x-2">
+                                   <Users size={20}></Users>
+                                   <span>Most Popular</span>
+                               </div>
+                           </button>
+                           <button onClick={() => {
+                               setSelectedFilter('top-rated');
+                               setCurrentPage(1);
+                           }}
+                                   className={`px-6 py-3 rounded-lg transition fond-semibold ${selectedFilter === 'top-rated' ? 'bg-gradient-to-r from-purple-600 to-blue-600' : 'hover:bg-gray-700'}`}>
+                               <div className="flex items-center space-x-2">
+                                   <Star size={20}></Star>
+                                   <span>Top-Rated</span>
+                               </div>
+                           </button>
+                       </div>
+                       <Link href="/community" className="flex items-center gap-2 px-5 py-3 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-purple-500 rounded-lg transition font-semibold">
+                           <Globe size={18} className="text-purple-400"/>
+                           <span>Community Hub</span>
+                       </Link>
                    </div>
                    <div className="flex items-center space-x-4">
                        <button onClick={PrevPage} disabled={currentPage === 1 || isLoading}
