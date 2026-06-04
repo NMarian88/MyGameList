@@ -37,7 +37,7 @@ export default function SteamAchievements({ steamId, rawgId }: SteamAchievements
         };
 
         if (steamId && rawgId) {
-            fetchAchievements();
+            void fetchAchievements();
         }
     }, [steamId, rawgId]);
 

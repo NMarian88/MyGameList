@@ -28,7 +28,7 @@ export async function GET(request: Request) {
             const claimedId = searchParams.get('openid.claimed_id') || '';
             const steamId = claimedId.split('/').pop();
 
-            if (!steamId) throw new Error("Could not extract Steam ID");
+            if (!steamId) console.error("Steam linking error: Could not extract Steam ID");
 
             const client = await clerkClient();
             await client.users.updateUserMetadata(userId, {

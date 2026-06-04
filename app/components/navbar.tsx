@@ -1,14 +1,14 @@
 'use client'
 import { useState, useEffect,useRef } from 'react';
-import {searchGames, getPopularGames, getTopRatedGames, getGameDetails} from '@/lib/rawg-api';
+import {searchGames} from '@/lib/rawg-api';
 import {searchUsers} from "@/app/actions/user.actions";
 import Link from 'next/link';
 import Image from 'next/image';
 import { Gamepad2, Search, Star,Calendar, Plus, Users, ChevronDown, Globe} from 'lucide-react';
-import { UserButton, useUser } from '@clerk/nextjs';
+import { UserButton} from '@clerk/nextjs';
 import { Game } from '@/lib/types';
 import {User} from  '@/app/actions/user.actions';
-
+import {useCollection} from "@/app/hooks/useCollection";
 interface CommunityResult {
     id: string;
     name: string;
@@ -17,25 +17,17 @@ interface CommunityResult {
     is_private: boolean;
 }
 
-type SearchType = 'games' | 'users' | 'communities';
+
 export default function NavBar() {
-    const { isSignedIn } = useUser();
+    const { addToCollection, toastMessage, isToastVisible } = useCollection();
     const[searchQuery, setSearchQuery] = useState('');
     const[searchResult, setSearchResult] = useState<Game[] | User[] | CommunityResult[]>([]);
-    const[popularGames, setPopularGames] = useState<Game[]>([]);
-    const[topRatedGames, setTopRatedGames] = useState<Game[]>([]);
-    const[selectedFilter, setSelectedFilter] = useState<'popular' | 'top-rated'>('popular');
-    const[currentPage, setCurrentPage] = useState(1);
     const[isSearching, setIsSearching] = useState(false);
-    const[isLoading, setIsLoading] = useState(false);
     const[showSearch, setShowSearch] = useState(false);
     const searchTimeoutRef = useRef<NodeJS.Timeout>(null);
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
-    const [toastMessage, setToastMessage] = useState<string | null>(null);
-    const [isToastVisible, setIsToastVisible] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const [searchType, setSearchType] = useState<'games' | 'users'>('games');
+    const [searchType, setSearchType] = useState<'games' | 'users' | 'communities'>('games');
     const searchContainerHide = useRef<HTMLDivElement>(null);
     useEffect(() => {
         if (searchQuery.trim() === '') {
@@ -88,73 +80,7 @@ export default function NavBar() {
             document.removeEventListener('mousedown', HandleClick);
         };
     }, []);
-    const showToastMessage = (message: string) => {
-        setToastMessage(message);
-        setIsToastVisible(true);
-        setTimeout(() => {
-            setIsToastVisible(false);
-            setToastMessage(null);
-        }, 3000);
-    };
 
-    const addToCollection = async (game: Game, status: string = 'wishlist') => {
-        try {
-            const fullGame = await getGameDetails(game.id);
-            const gameResponse = await fetch('/api/games', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    id: fullGame.id,
-                    rawg_id: fullGame.id,
-                    name: fullGame.name,
-                    slug: fullGame.slug || `game-${game.id}`,
-                    description: fullGame.description,
-                    background_image: fullGame.background_image || null,
-                    released: fullGame.released ? new Date(fullGame.released).toISOString().split('T')[0] : null,
-                    rating: fullGame.rating || 0,
-                    rating_top: fullGame.rating_top || 0,
-                    ratings_count: fullGame.ratings_count || 0,
-                    metacritic: fullGame.metacritic || null,
-                    playtime:fullGame.playtime || 0,
-                    platforms: fullGame.platforms || [],
-                    genres: fullGame.genres || [],
-                    short_screenshots: game.short_screenshots || [],
-                    metadata:fullGame
-                }),
-            });
-
-
-            if (!gameResponse.ok && gameResponse.status !== 409) {
-                console.error('Failed to save game to database');
-                showToastMessage('Failed to process game details.');
-                return;
-            }
-
-
-            const userGameResponse = await fetch('/api/user/games', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ gameId: game.id, status }),
-            });
-
-            if (userGameResponse.ok) {
-                console.log('Game added to collection!');
-                showToastMessage('Game added to collection!');
-
-                window.dispatchEvent(new CustomEvent('gameAdded'));
-            } else {
-                console.log('Failed to link game');
-                showToastMessage('Failed to add game to collection.');
-            }
-        } catch (error) {
-            console.error('Error adding game:', error);
-            showToastMessage('Error adding game.');
-        }
-    };
 
    return(
        <div>
@@ -265,7 +191,7 @@ export default function NavBar() {
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            <button onClick={(e) =>{ e.preventDefault(); addToCollection(game) }} className="p-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition opacity-0 group-hover:opacity-100" title="Add to collection">
+                                                            <button onClick={(e) =>{ e.preventDefault(); void addToCollection(game) }} className="p-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition opacity-0 group-hover:opacity-100" title="Add to collection">
                                                                 <Plus size={20}></Plus>
                                                             </button>
                                                         </div>
@@ -298,7 +224,7 @@ export default function NavBar() {
                                                 <Link href={`/community/${community.slug}`} key={community.id}>
                                                     <div className="p-4 hover:bg-gray-700 border-b border-gray-700 last:border-b-0 transition">
                                                         <div className="flex items-center space-x-3">
-                                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center font-bold shrink-0">
+                                                            <div className="w-10 h-10 rounded-full bg-linear-to-br from-purple-600 to-blue-600 flex items-center justify-center font-bold shrink-0">
                                                                 {community.name[0].toUpperCase()}
                                                             </div>
                                                             <div>

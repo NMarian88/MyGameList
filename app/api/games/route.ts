@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { Game } from "../../../lib/types";
-import { getGameDetails } from "../../../lib/rawg-api";
+import { Game } from "@/lib/types";
+import { getGameDetails } from "@/lib/rawg-api";
 import { supabase, supabaseServer } from '@/lib/supabase';
 
 export async function GET(request: Request) {
@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     if (identifier) {
         const isNumeric = /^\d+$/.test(identifier);
         
-        // Check if game exists in database (by ID or slug)
+
         const { data: game, error } = await supabase
             .from('games')
             .select('*')
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
         }
         
         if (game) {
-            // Ensure the database game has the correct structure
+
             const formattedGame = {
                 id: game.rawg_id,
                 name: game.name,
@@ -48,11 +48,11 @@ export async function GET(request: Request) {
             return NextResponse.json(formattedGame);
         }
         
-        // If not found in database, fetch from RAWG API
+
         try {
             const gameFromApi = await getGameDetails(isNumeric ? Number(identifier) : identifier);
             
-            // Map to database structure: extract key fields + store full response in metadata
+
             const gameRecord = {
                 rawg_id: gameFromApi.id,
                 name: gameFromApi.name,
@@ -65,7 +65,7 @@ export async function GET(request: Request) {
                 platforms: gameFromApi.platforms,
                 genres: gameFromApi.genres,
                 background_image: gameFromApi.background_image,
-                metadata: gameFromApi  // Store full RAWG response as JSONB
+                metadata: gameFromApi
             };
             
             const { error: upsertError } = await supabaseServer
@@ -87,7 +87,7 @@ export async function GET(request: Request) {
         }
     }
 
-    // Return all games from database
+
     const { data: allGames, error } = await supabase
         .from('games')
         .select('*');
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
             );
         }
 
-        // Check if game already exists
+
         const { data: existingGame } = await supabase
             .from('games')
             .select('id')
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
             );
         }
 
-        // Add new game
+
         const newGame: Game = {
             id,
             name: gameData.name,
@@ -174,7 +174,7 @@ export async function PUT(request: Request) {
             );
         }
 
-        // Update game in database
+
         const { data, error } = await supabaseServer
             .from('games')
             .update(updateData)
@@ -223,7 +223,7 @@ export async function DELETE(request: Request) {
             );
         }
 
-        // Delete game from database
+
         const { error } = await supabaseServer
             .from('games')
             .delete()

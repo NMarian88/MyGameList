@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { UserGameData } from "../../../../lib/types";
+import { UserGameData } from "@/lib/types";
 import { supabaseServer } from "@/lib/supabase";
 
-export async function GET(request: Request) {
+export async function GET() {
     try {
         const { userId } = await auth();
 
@@ -14,7 +14,7 @@ export async function GET(request: Request) {
             );
         }
 
-        // Fetch user games with reviews from Supabase
+
         const { data: userGames, error } = await supabaseServer
             .from('user_games')
             .select(`
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
             );
         }
 
-        // Calculate stats
+
         const games = userGames || [];
         const stats = {
             totalGames: games.length,
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
             );
         }
 
-        // Fetch the game details to get both ID and slug
+
         let gameDetails;
         try {
             const response = await fetch(`${request.url.split('/api')[0]}/api/games?id=${gameId}`);
@@ -133,10 +133,10 @@ export async function POST(request: Request) {
             console.warn("Could not fetch game details:", error);
         }
 
-        // Use numeric ID if available, otherwise use provided gameId
+
         const finalGameId = gameDetails ? String(gameDetails.id) : gameId;
 
-        // Check if user already has this game
+
         const { data: existingGame } = await supabaseServer
             .from('user_games')
             .select('id')
@@ -153,7 +153,7 @@ export async function POST(request: Request) {
 
         let userGameId;
         if (existingGame) {
-            // Update existing entry
+
             const result = await supabaseServer
                 .from('user_games')
                 .update(gameData)
@@ -171,7 +171,7 @@ export async function POST(request: Request) {
             }
             userGameId = result.data.id;
         } else {
-            // Insert new entry
+
             const result = await supabaseServer
                 .from('user_games')
                 .insert(gameData)
@@ -188,12 +188,12 @@ export async function POST(request: Request) {
             userGameId = result.data.id;
         }
 
-        // Handle review update (single review, not array)
+
         if (reviews && Array.isArray(reviews) && reviews.length > 0) {
-            // Get the latest review from the request
+
             const latestReview = reviews[reviews.length - 1];
             
-            // Check if there's an existing review for this user_game
+
             const { data: existingReviews } = await supabaseServer
                 .from('reviews')
                 .select('id')
@@ -210,14 +210,14 @@ export async function POST(request: Request) {
 
             let reviewError;
             if (existingReviews && existingReviews.length > 0) {
-                // Update existing review
+
                 const result = await supabaseServer
                     .from('reviews')
                     .update(reviewData)
                     .eq('id', existingReviews[0].id);
                 reviewError = result.error;
             } else {
-                // Insert new review
+
                 const result = await supabaseServer
                     .from('reviews')
                     .insert(reviewData);
@@ -226,11 +226,11 @@ export async function POST(request: Request) {
 
             if (reviewError) {
                 console.error("Review operation error:", reviewError);
-                // Don't fail the request if reviews fail, just log it
+
             }
         }
 
-        // Calculate updated stats
+
         const { data: allUserGames } = await supabaseServer
             .from('user_games')
             .select('status')

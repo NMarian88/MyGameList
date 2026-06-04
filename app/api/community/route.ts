@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import { supabase, supabaseServer } from '@/lib/supabase';
 
 export async function GET(request: Request) {
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const user = await currentUser();
+
     const body = await request.json();
     const { name, description, is_private } = body;
 

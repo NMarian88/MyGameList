@@ -1,67 +1,32 @@
 'use client'
-import {searchGames, getPopularGames, getTopRatedGames, getGameDetails} from '@/lib/rawg-api';
-
+import {getPopularGames, getTopRatedGames} from '@/lib/rawg-api';
 import { useState, useEffect,useRef } from 'react';
 import NavBar from './components/navbar';
-import { Gamepad2, Search, Star,Calendar, Plus,Users,ArrowLeft,ArrowRight, Globe} from 'lucide-react';
-import { UserButton , useAuth} from '@clerk/nextjs';
+import {Star,Plus,Users,ArrowLeft,ArrowRight, Globe} from 'lucide-react';
+import {useAuth} from '@clerk/nextjs';
 import { Game } from '@/lib/types';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
-import {auth} from "@clerk/nextjs/server";
-import {isReactLargeShellError} from "next/dist/server/app-render/react-large-shell-error";
+import {useCollection} from "@/app/hooks/useCollection";
+
 export default function HomePage() {
-    const[searchQuery, setSearchQuery] = useState('');
-    const[searchResult, setSearchResult] = useState<Game[]>([]);
+    const { addToCollection, toastMessage, isToastVisible } = useCollection();
     const[popularGames, setPopularGames] = useState<Game[]>([]);
     const[topRatedGames, setTopRatedGames] = useState<Game[]>([]);
     const[selectedFilter, setSelectedFilter] = useState<'popular' | 'top-rated'>('popular');
     const[currentPage, setCurrentPage] = useState(1);
-    const[isSearching, setIsSearching] = useState(false);
     const[isLoading, setIsLoading] = useState(false);
-    const[showSearch, setShowSearch] = useState(false);
-    const [toastMessage, setToastMessage] = useState<string | null>(null);
-    const [isToastVisible, setIsToastVisible] = useState(false);
-    const searchTimeoutRef = useRef<NodeJS.Timeout>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const {isLoaded, userId} = useAuth();
     useEffect(() => {
-        fetchGames();
+        void fetchGames();
     }, [selectedFilter,currentPage]);
     useEffect(() => {
         if(isLoaded && !userId){
             router.push('/sign-in')
         }
     }, [isLoaded, userId, router]);
-    useEffect(() => {
-        if (searchQuery.trim() === '') {
-            setSearchResult([]);
-            setShowSearch(false);
-            return;
-        }
-        setIsSearching(true);
-        setShowSearch(true);
-        if (searchTimeoutRef.current) {
-            clearTimeout(searchTimeoutRef.current);
-        }
-        searchTimeoutRef.current = setTimeout(async () => {
-            try {
-                const results = await searchGames(searchQuery);
-                setSearchResult(results.results.slice(0, 5));
-            } catch (error) {
-                console.error('Search failed:', error);
-            } finally {
-                setIsSearching(false);
-            }
-        }, 300);
-
-        return () => {
-            if (searchTimeoutRef.current) {
-                clearTimeout(searchTimeoutRef.current);
-            }
-        };
-    }, [searchQuery]);
     const fetchGames = async () => {
         setIsLoading(true);
         try {
@@ -88,72 +53,7 @@ export default function HomePage() {
     }
     const displayedGames = selectedFilter === 'popular' ? popularGames : topRatedGames;
 
-    const showToastMessage = (message: string) => {
-        setToastMessage(message);
-        setIsToastVisible(true);
-        setTimeout(() => {
-            setIsToastVisible(false);
-            setToastMessage(null);
-        }, 3000); // Hide after 3 seconds
-    };
-    const addToCollection = async (game: Game, status: string = 'wishlist') => {
-        try {
-            const fullGame = await getGameDetails(game.id);
-            const gameResponse = await fetch('/api/games', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    id: fullGame.id,
-                    rawg_id: fullGame.id,
-                    name: fullGame.name,
-                    slug: fullGame.slug || `game-${game.id}`,
-                    description: fullGame.description,
-                    background_image: fullGame.background_image || null,
-                    released: fullGame.released ? new Date(fullGame.released).toISOString().split('T')[0] : null,
-                    rating: fullGame.rating || 0,
-                    rating_top: fullGame.rating_top || 0,
-                    ratings_count: fullGame.ratings_count || 0,
-                    metacritic: fullGame.metacritic || null,
-                    playtime:fullGame.playtime || 0,
-                    platforms: fullGame.platforms || [],
-                    genres: fullGame.genres || [],
-                    short_screenshots: game.short_screenshots || [],
-                    metadata:fullGame
-                }),
-            });
 
-
-            if (!gameResponse.ok && gameResponse.status !== 409) {
-                console.error('Failed to save game to database');
-                showToastMessage('Failed to process game details.');
-                return;
-            }
-
-
-            const userGameResponse = await fetch('/api/user/games', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ gameId: game.id, status }),
-            });
-
-            if (userGameResponse.ok) {
-                console.log('Game added to collection!');
-                showToastMessage('Game added to collection!');
-
-                window.dispatchEvent(new CustomEvent('gameAdded'));
-            } else {
-                console.log('Failed to link game');
-                showToastMessage('Failed to add game to collection.');
-            }
-        } catch (error) {
-            console.error('Error adding game:', error);
-            showToastMessage('Error adding game.');
-        }
-    };
     return(
        <div className="min-h-screen bg-linear-to-b from-gray-900 to-black text-white">
             <NavBar />
@@ -173,7 +73,7 @@ export default function HomePage() {
                                setSelectedFilter('popular');
                                setCurrentPage(1);
                            }}
-                                   className={`px-6 py-3 rounded-lg transition fond-semibold ${selectedFilter === 'popular' ? 'bg-gradient-to-r from-purple-600 to-blue-600' : 'hover:bg-gray-700'}`}>
+                                   className={`px-6 py-3 rounded-lg transition fond-semibold ${selectedFilter === 'popular' ? 'bg-linear-to-r from-purple-600 to-blue-600' : 'hover:bg-gray-700'}`}>
                                <div className="flex items-center space-x-2">
                                    <Users size={20}></Users>
                                    <span>Most Popular</span>
@@ -183,7 +83,7 @@ export default function HomePage() {
                                setSelectedFilter('top-rated');
                                setCurrentPage(1);
                            }}
-                                   className={`px-6 py-3 rounded-lg transition fond-semibold ${selectedFilter === 'top-rated' ? 'bg-gradient-to-r from-purple-600 to-blue-600' : 'hover:bg-gray-700'}`}>
+                                   className={`px-6 py-3 rounded-lg transition fond-semibold ${selectedFilter === 'top-rated' ? 'bg-linear-to-r from-purple-600 to-blue-600' : 'hover:bg-gray-700'}`}>
                                <div className="flex items-center space-x-2">
                                    <Star size={20}></Star>
                                    <span>Top-Rated</span>
@@ -240,7 +140,7 @@ export default function HomePage() {
                                                    <div
                                                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ">
                                                        <button
-                                                           onClick={(e) =>{ e.preventDefault(); addToCollection(game)}}
+                                                           onClick={(e) =>{ e.preventDefault(); void addToCollection(game)}}
                                                            className="absolute bottom-0 right-0 m-2 p-3 bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-full shadow-lg transition hover:scale-110">
                                                            <Plus size={20}/>
                                                        </button>

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import NavBar from '@/app/components/navbar';
 import Link from 'next/link';
 import { Users, Search, Plus, Lock, Globe } from 'lucide-react';
@@ -26,7 +26,7 @@ export default function CommunityHubPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchCommunities();
+        void fetchCommunities();
     }, []);
 
     const fetchCommunities = async (q?: string) => {
@@ -46,7 +46,7 @@ export default function CommunityHubPage() {
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         const q = e.target.value;
         setSearchQuery(q);
-        fetchCommunities(q || undefined);
+        void fetchCommunities(q || undefined);
     };
 
     const handleCreate = async (e: React.FormEvent) => {
@@ -66,7 +66,7 @@ export default function CommunityHubPage() {
             }
             setShowCreateModal(false);
             setCreateForm({ name: '', description: '', is_private: false });
-            fetchCommunities();
+            await fetchCommunities();
         } catch {
             setError('Failed to create community');
         } finally {
@@ -75,7 +75,7 @@ export default function CommunityHubPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+        <div className="min-h-screen bg-linear-to-b from-gray-900 to-black text-white">
             <NavBar />
             <main className="container mx-auto px-4 py-8">
                 <div className="mb-10 text-center">
@@ -99,7 +99,7 @@ export default function CommunityHubPage() {
                     {userId && (
                         <button
                             onClick={() => setShowCreateModal(true)}
-                            className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-xl font-semibold transition whitespace-nowrap"
+                            className="flex items-center gap-2 px-5 py-3 bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-xl font-semibold transition whitespace-nowrap"
                         >
                             <Plus size={18} />
                             Create Community
@@ -123,7 +123,7 @@ export default function CommunityHubPage() {
                                 <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 hover:border-purple-500 transition-all hover:scale-[1.02] cursor-pointer h-full flex flex-col gap-3">
                                     <div className="flex items-start justify-between">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
+                                            <div className="w-10 h-10 rounded-full bg-linear-to-br from-purple-600 to-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
                                                 {c.name[0].toUpperCase()}
                                             </div>
                                             <h3 className="font-bold text-lg leading-tight">{c.name}</h3>
@@ -196,7 +196,7 @@ export default function CommunityHubPage() {
                                 <button
                                     type="submit"
                                     disabled={isCreating}
-                                    className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 rounded-xl transition font-semibold"
+                                    className="flex-1 py-3 bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 rounded-xl transition font-semibold"
                                 >
                                     {isCreating ? 'Creating...' : 'Create'}
                                 </button>

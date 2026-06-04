@@ -19,14 +19,13 @@ export async function searchUsers(searchQuery: string): Promise<User[]> {
             limit: 10,
         });
         const users = response.data || response;
-        const Users: User[] = users.map((user) =>{
-            return{
+        return users.map((user) => {
+            return {
                 id: user.id,
                 username: user.username || user.firstName || 'Unknown User',
                 imageUrl: user.imageUrl,
             };
         });
-        return Users;
     }catch(error){
         console.error('Failed to search Clerk users:', error);
         return [];

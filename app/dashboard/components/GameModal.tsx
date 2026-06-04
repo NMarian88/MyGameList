@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from 'react';
+import {useEffect, useState, useRef, useMemo} from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { X, ChevronDown,Trash2 } from 'lucide-react';
@@ -16,19 +16,16 @@ interface GameModalProps {
 }
 
 export default function GameModal({ game, userGameData, isOpen, onClose, onStatusChange, isReadOnly = false }: GameModalProps) {
-    // Status editing state
+
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [currentStatusValue, setCurrentStatusValue] = useState(userGameData?.status);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const [isDeleting,setIsDeleting] = useState(false);
-    // Score editing state
     const [isEditingScore, setIsEditingScore] = useState(false);
     const [isUpdatingScore, setIsUpdatingScore] = useState(false);
     const [scoreInput, setScoreInput] = useState<number | undefined>(userGameData?.reviews?.[userGameData.reviews.length - 1]?.reviewScore);
     const [localLatestReview, setLocalLatestReview] = useState(userGameData?.reviews?.[userGameData.reviews.length - 1]);
-
-    // Review editing state
     const [isEditingReview, setIsEditingReview] = useState(false);
     const [isUpdatingReview, setIsUpdatingReview] = useState(false);
     const [reviewInput, setReviewInput] = useState<string | undefined>(userGameData?.reviews?.[userGameData.reviews.length - 1]?.reviewText);
@@ -36,7 +33,6 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
     const { user } = useUser();
     const steamId = user?.publicMetadata?.steamId as string | undefined;
 
-    // Sync local latest review, score input and review input when incoming prop changes
     useEffect(() => {
         const latest = userGameData?.reviews?.[userGameData.reviews.length - 1];
         setLocalLatestReview(latest);
@@ -44,7 +40,6 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
         setReviewInput(latest?.reviewText);
     }, [userGameData?.reviews]);
 
-    // Focus textarea when entering edit mode
     useEffect(() => {
         if (isEditingReview && reviewRef.current) {
             try {
@@ -56,7 +51,6 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
 
     const inputRef = useRef<HTMLInputElement | null>(null);
 
-    // Focus input when entering edit mode
     useEffect(() => {
         if (isEditingScore && inputRef.current) {
             try {
@@ -67,7 +61,6 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
     }, [isEditingScore]);
 
     const handleSaveScore = async (newScore: number) => {
-        // If there's no change, just close editor
         if (localLatestReview?.reviewScore === newScore) {
             setIsEditingScore(false);
             return;
@@ -76,7 +69,6 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
         setIsUpdatingScore(true);
         try {
             const now = new Date().toISOString();
-            // Create updated review (keep existing text if any)
             const updatedReview = {
                 reviewScore: newScore,
                 reviewText: localLatestReview?.reviewText,
@@ -89,13 +81,13 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                 body: JSON.stringify({
                     gameId: String(game.id),
                     status: userGameData?.status || 'completed',
-                    reviews: [updatedReview] // Send single review
+                    reviews: [updatedReview]
                 }),
             });
 
-            if (!response.ok) throw new Error('Failed to update score');
+            if (!response.ok) console.error('Failed to update score');
 
-            // Optimistically update local state for immediate UI feedback
+
             setLocalLatestReview(updatedReview);
             if (onStatusChange) onStatusChange();
             setIsEditingScore(false);
@@ -107,37 +99,34 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
         }
     };
 
-    // Cancel editing and revert input to last known score
+
     const handleCancelEditing = () => {
         setIsEditingScore(false);
         setScoreInput(localLatestReview?.reviewScore);
     };
 
-    // Called on blur to either cancel (if empty) or save changes
+
     const handleBlurSave = () => {
         if (scoreInput === undefined) {
             handleCancelEditing();
             return;
         }
-        // If unchanged, simply close the editor
         if (localLatestReview?.reviewScore === scoreInput) {
             setIsEditingScore(false);
             return;
         }
 
         if (!isUpdatingScore) {
-            handleSaveScore(Math.max(0, Math.min(10, Math.round(scoreInput))));
+            void handleSaveScore(Math.max(0, Math.min(10, Math.round(scoreInput))));
         }
     };
 
-    // Review handlers
     const handleCancelReviewEditing = () => {
         setIsEditingReview(false);
         setReviewInput(localLatestReview?.reviewText);
     };
 
     const handleSaveReview = async (newText: string) => {
-        // If unchanged, just close editor
         if (localLatestReview?.reviewText === newText) {
             setIsEditingReview(false);
             return;
@@ -146,7 +135,6 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
         setIsUpdatingReview(true);
         try {
             const now = new Date().toISOString();
-            // Create updated review (keep existing score if any)
             const updatedReview = {
                 reviewScore: localLatestReview?.reviewScore,
                 reviewText: newText,
@@ -163,7 +151,7 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                 }),
             });
 
-            if (!response.ok) throw new Error('Failed to update review');
+            if (!response.ok) console.error('Failed to update review');
 
             setLocalLatestReview(updatedReview);
             if (onStatusChange) onStatusChange();
@@ -187,16 +175,14 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
             return;
         }
         if (!isUpdatingReview) {
-            handleSaveReview(trimmed);
+            void handleSaveReview(trimmed);
         }
     };
 
-    // Update local status when userGameData changes
     useEffect(() => {
         setCurrentStatusValue(userGameData?.status);
     }, [userGameData?.status]);
 
-    // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -213,7 +199,6 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
         };
     }, [isStatusDropdownOpen]);
 
-    // Close modal on ESC key
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
@@ -254,12 +239,9 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                 }),
             });
 
-            if (!response.ok) throw new Error('Failed to update status');
-
-            // Update local state immediately for visual feedback
+            if (!response.ok) console.error('Failed to update status');
             setCurrentStatusValue(newStatus);
 
-            // Call the refresh callback if provided
             if (onStatusChange) {
                 onStatusChange();
             }
@@ -290,16 +272,13 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
 
     const genres = game.genres?.map(g => g.name).join(', ') || 'N/A';
     const platforms = game.platforms?.map(p => p.platform.name).join(', ') || 'N/A';
-    let safeScreenshots: any[] = [];
-    try {
+
+    const safeScreenshots = useMemo(() => {
         if (Array.isArray(game.short_screenshots)) {
-            safeScreenshots = game.short_screenshots;
-        } else if (typeof game.short_screenshots === 'string') {
-            safeScreenshots = JSON.parse(game.short_screenshots);
+            return game.short_screenshots;
         }
-    } catch (e) {
-        console.error("Could not parse screenshots");
-    }
+        return [];
+    }, [game.short_screenshots]);
     const deleteFromCollection = async() => {
         if (!confirm("Are you sure you want to remove this game from your collection? This cannot be undone.")) {
             return;
@@ -315,12 +294,11 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
 
             if (!response.ok) {
                 const data = await response.json();
-                throw new Error(data.error || 'Failed to delete');
+                console.error("Failed to delete game:", data.message);
             }
 
-            // Successfully deleted
-            if (onStatusChange) onStatusChange(); // Refresh the parent list
-            onClose(); // Close the modal
+            if (onStatusChange) onStatusChange();
+            onClose();
         } catch (error) {
             console.error("Error deleting game:", error);
             alert("Failed to remove game from collection.");
@@ -330,7 +308,7 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
     };
     const modalContent = (
         <div 
-            className="fixed top-0 left-0 right-0 bottom-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto"
+            className="fixed top-0 left-0 right-0 bottom-0 z-50 flex items-center justify-center bg-black/80 p-4 overflow-y-auto"
             onClick={onClose}
         >
             <div 
@@ -343,6 +321,7 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                         src={game.background_image || "https://media.rawg.io/media/screenshots/df3/df397a86c8d5b4023fe13fa6dd7f140f.jpeg"}
                         alt={game.name}
                         fill
+                        priority
                         className="object-cover"
                     />
                     <div className="absolute inset-0 bg-linear-to-t from-gray-900 via-gray-900/50 to-transparent" />
@@ -459,7 +438,7 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                                                     }}
                                                     onKeyDown={(e) => {
                                                         if ((e.key === 'Enter' || e.key === 'NumpadEnter') && scoreInput !== undefined) {
-                                                            handleSaveScore(Math.max(0, Math.min(10, Math.round(scoreInput))))
+                                                            void handleSaveScore(Math.max(0, Math.min(10, Math.round(scoreInput))))
                                                         } else if (e.key === 'Escape') {
                                                             handleCancelEditing();
                                                         }
@@ -584,7 +563,7 @@ export default function GameModal({ game, userGameData, isOpen, onClose, onStatu
                                             onKeyDown={(e) => {
                                                 if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                                                     const trimmed = reviewInput?.trim() ?? '';
-                                                    if (trimmed !== '') handleSaveReview(trimmed);
+                                                    if (trimmed !== '') void handleSaveReview(trimmed);
                                                 } else if (e.key === 'Escape') {
                                                     handleCancelReviewEditing();
                                                 }

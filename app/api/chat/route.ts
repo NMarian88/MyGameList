@@ -1,9 +1,9 @@
 import {google} from '@ai-sdk/google';
-import { streamText, convertToModelMessages, UIMessage } from 'ai';
+import { streamText, convertToModelMessages, UIMessage ,stepCountIs} from 'ai';
 import {auth} from '@clerk/nextjs/server';
 import {NextResponse} from "next/server";
 import { supabaseServer } from '@/lib/supabase';
-
+import { z } from 'zod';
 export const maxDuration = 30;
 
 async function buildLibraryContext(userId: string): Promise<string> {
@@ -60,14 +60,58 @@ export async function POST(req: Request) {
 
     const result = streamText({
         model: google('gemini-2.5-flash'),
-        temperature: 0.5,
+        temperature: 0.2,
         presencePenalty: 0,
         frequencyPenalty: 0,
-        system: `You are an elite, friendly gaming companion for MYGAMELIST. Your job is to help users with their requests by providing information or links for that information. Keep your answers concise, practical, and highly strategic. Always offer the most information possible so the user does not have any confusions. Do not answer any questions that are not relating to the gaming ecosystem.
+        system: `You are an elite, friendly gaming companion for MYGAMELIST. Your job is to help users with their requests by providing information or links for that information. Make sure your answers contain enough information so that the users does not get confused and requires more queries. Do not answer any questions that are not relating to the gaming ecosystem.  CRITICAL: If asked about specific achievements, walkthroughs, or lore, use the webSearch tool to find the accurate information before answering. Never guess achievement unlock requirements. Create a complete guide of achievements or walkthroughs
 
 ${libraryContext}`,
         messages: await convertToModelMessages(messages),
+        tools: {
+            webSearch: {
+                description: 'Search the web for video game achievements, guides, and specific gaming facts.',
+                inputSchema: z.object({
+                    query: z.string().describe('The search query, e.g., "How to get Pacifist achievement in Hollow Knight"'),
+                }),
+                execute: async ({ query }: { query: string }) => {
+                    try {
+                        const response = await fetch('https://api.tavily.com/search', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${process.env.TAVILY_API_KEY}`
+                            },
+                            body: JSON.stringify({
+                                query: query,
+                                search_depth: "basic"
+                            })
+                        });
+
+                        if (!response.ok) {
+                            console.error(`Search Tool Error: Search failed with status: ${response.status}`);
+                            return { results: "Error: Could not access the internet to verify the information." };
+                        }
+
+                        const data = await response.json();
+
+                        return {
+                            results: data.results.map((r: any) => ({
+                                title: r.title,
+                                content: r.content
+                            }))
+                        };
+
+                    } catch (error) {
+                        console.error("Search Tool Error:", error);
+                        return { results: "Error: Could not access the internet to verify the information." };
+                    }
+                },
+            },
+        },
+
+        stopWhen: stepCountIs(3),
     });
+
 
     return result.toUIMessageStreamResponse();
 }

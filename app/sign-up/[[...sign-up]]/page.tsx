@@ -4,11 +4,11 @@ import { Gamepad2, Shield, Clock, Bell } from 'lucide-react';
 
 export default function SignUpPage() {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white flex">
-            <div className="hidden lg:flex lg:w-2/5 bg-gradient-to-b from-blue-900/20 to-purple-900/20 p-12 flex-col justify-between border-r border-gray-800">
+        <div className="min-h-screen bg-linear-to-br from-gray-900 via-black to-gray-900 text-white flex">
+            <div className="hidden lg:flex lg:w-2/5 bg-linear-to-b from-blue-900/20 to-purple-900/20 p-12 flex-col justify-between border-r border-gray-800">
                 <div>
                     <Link href="/" className="flex items-center space-x-3 group">
-                        <div className="p-3 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl group-hover:scale-105 transition-transform">
+                        <div className="p-3 bg-linear-to-br from-blue-600 to-purple-600 rounded-xl group-hover:scale-105 transition-transform">
                             <Gamepad2 size={28} />
                         </div>
                         <div>
@@ -82,7 +82,7 @@ export default function SignUpPage() {
                 <div className="w-full max-w-md">
                     <div className="lg:hidden mb-10 text-center">
                         <Link href="/" className="inline-flex items-center space-x-3 group">
-                            <div className="p-2 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg group-hover:scale-105 transition-transform">
+                            <div className="p-2 bg-linear-to-br from-blue-600 to-purple-600 rounded-lg group-hover:scale-105 transition-transform">
                                 <Gamepad2 size={24} />
                             </div>
                             <div className="text-left">
@@ -94,7 +94,7 @@ export default function SignUpPage() {
 
                     <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-800 p-8 shadow-2xl shadow-purple-900/20 flex flex-col items-center justify-center">
                         <div className="text-center mb-8">
-                            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-900 to-purple-900 rounded-2xl mb-4 border border-blue-700/50">
+                            <div className="inline-flex items-center justify-center w-16 h-16 bg-linear-to-br from-blue-900 to-purple-900 rounded-2xl mb-4 border border-blue-700/50">
                                 <Gamepad2 size={28} />
                             </div>
                             <h2 className="text-2xl font-bold">Create Account</h2>
@@ -136,7 +136,7 @@ export default function SignUpPage() {
                             routing="path"
                             path="/sign-up"
                             signInUrl="/sign-in"
-                            redirectUrl="/"
+                            fallbackRedirectUrl="/"
                         />
 
                         <div className="mt-6 text-center text-xs text-gray-500">

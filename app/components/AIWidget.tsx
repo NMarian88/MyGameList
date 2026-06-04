@@ -7,9 +7,9 @@ import ReactMarkdown from 'react-markdown';
 export default function AIWidget() {
     const [open, setOpen] = useState(false);
     const [input, setInput] = useState('');
-    const { messages, sendMessage } = useChat();
+    const { messages, sendMessage, status } = useChat();
     const bottomRef = useRef<HTMLDivElement>(null);
-
+    const isLoading = status === 'submitted' || status === 'streaming';
     useEffect(() => {
         if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, open]);
@@ -75,6 +75,24 @@ export default function AIWidget() {
                                 </div>
                             </div>
                         ))}
+                        {isLoading && (
+                            <div className="flex justify-start animate-in fade-in duration-300">
+                                <div className="max-w-[80%] rounded-xl px-4 py-3.5 bg-gray-800 text-gray-200 rounded-bl-sm flex items-center gap-1.5 shadow-sm">
+                                    <div
+                                        className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"
+                                        style={{ animationDelay: '0ms' }}
+                                    ></div>
+                                    <div
+                                        className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"
+                                        style={{ animationDelay: '150ms' }}
+                                    ></div>
+                                    <div
+                                        className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"
+                                        style={{ animationDelay: '300ms' }}
+                                    ></div>
+                                </div>
+                            </div>
+                        )}
                         <div ref={bottomRef} />
                     </div>
 
@@ -96,7 +114,7 @@ export default function AIWidget() {
                         />
                         <button
                             type="submit"
-                            disabled={!input.trim()}
+                            disabled={!input.trim() || isLoading}
                             className="flex items-center justify-center w-9 h-9 rounded-xl bg-linear-to-r from-purple-600 to-blue-600 text-white hover:opacity-90 disabled:opacity-40 transition"
                         >
                             <Send size={15} />

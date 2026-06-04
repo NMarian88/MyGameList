@@ -6,15 +6,13 @@ import { Plus, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AddToCollectionButtonProps {
-    gameId: number;
-    gameName: string;
+    game: any;
     userId: string | null;
     initialStatus?: string;
 }
 
 export default function AddToCollectionButton({
-                                                  gameId,
-                                                  gameName,
+                                                  game,
                                                   userId,
                                                   initialStatus = 'wishlist'
                                               }: AddToCollectionButtonProps) {
@@ -30,27 +28,55 @@ export default function AddToCollectionButton({
 
         setIsAdding(true);
         try {
-            const response = await fetch('/api/user/games', {
+
+            const gameResponse = await fetch('/api/games', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    gameId: gameId,
+                    id: game.id,
+                    rawg_id: game.id,
+                    name: game.name,
+                    slug: game.slug || `game-${game.id}`,
+                    description: game.description,
+                    background_image: game.background_image || null,
+                    released: game.released ? new Date(game.released).toISOString().split('T')[0] : null,
+                    rating: game.rating || 0,
+                    rating_top: game.rating_top || 0,
+                    ratings_count: game.ratings_count || 0,
+                    metacritic: game.metacritic || null,
+                    playtime: game.playtime || 0,
+                    platforms: game.platforms || [],
+                    genres: game.genres || [],
+                    short_screenshots: game.short_screenshots || [],
+                    metadata: game
+                }),
+            });
+
+
+            if (!gameResponse.ok && gameResponse.status !== 409) {
+                console.error('Failed to process game details.');
+            }
+
+
+            const userGameResponse = await fetch('/api/user/games', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    gameId: game.id,
                     status: initialStatus
                 }),
             });
 
-            const data = await response.json();
+            const data = await userGameResponse.json();
 
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to add game');
+            if (!userGameResponse.ok) {
+                console.error(data.message || 'Failed to add game to collection.');
             }
 
             setIsAdded(true);
-            toast.success(`"${gameName}" added to your collection!`);
-
+            toast.success(`"${game.name}" added to your collection!`);
 
             window.dispatchEvent(new CustomEvent('gameAdded'));
-
 
             setTimeout(() => setIsAdded(false), 3000);
         } catch (error: any) {
@@ -68,7 +94,7 @@ export default function AddToCollectionButton({
             className={`px-8 py-4 w-fit rounded-xl font-bold text-lg transition-all transform hover:scale-105 flex items-center gap-3 ${
                 isAdded
                     ? 'bg-green-600 hover:bg-green-700'
-                    : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
+                    : 'bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
             }`}
         >
             {isAdding ? (

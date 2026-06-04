@@ -4,11 +4,11 @@ import { Gamepad2, Trophy, Star, Users } from 'lucide-react';
 
 export default function SignInPage() {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white flex">
-            <div className="hidden lg:flex lg:w-2/5 bg-gradient-to-b from-purple-900/20 to-blue-900/20 p-12 flex-col justify-between border-r border-gray-800">
+        <div className="min-h-screen bg-linear-to-br from-gray-900 via-black to-gray-900 text-white flex">
+            <div className="hidden lg:flex lg:w-2/5 bg-linear-to-b from-purple-900/20 to-blue-900/20 p-12 flex-col justify-between border-r border-gray-800">
                 <div>
                     <Link href="/" className="flex items-center space-x-4 group">
-                        <div className="p-3 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl group-hover:scale-110 transition-transform ">
+                        <div className="p-3 bg-linear-to-br from-purple-600 to-blue-600 rounded-xl group-hover:scale-110 transition-transform ">
                             <Gamepad2 size={28} />
                         </div>
                         <div >
@@ -79,7 +79,7 @@ export default function SignInPage() {
                     </div>
                     <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-800 p-8 shadow-2xl shadow-purple-900/20 flex flex-col items-center justify-center">
                         <div className="text-center mb-8">
-                            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-900 to-blue-900 rounded-2xl mb-4 border border-purple-700/50">
+                            <div className="inline-flex items-center justify-center w-16 h-16 bg-linear-to-br from-purple-900 to-blue-900 rounded-2xl mb-4 border border-purple-700/50">
                                 <Gamepad2 size={28} />
                             </div>
                             <h2 className="text-2xl fond-bold">Sign in</h2>

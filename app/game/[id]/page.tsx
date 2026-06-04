@@ -170,8 +170,7 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
 
                                 <div className="flex flex-wrap gap-4 pt-4">
                                     <AddToCollectionButton
-                                        gameId={game.id}
-                                        gameName={game.name}
+                                        game={game}
                                         userId={userId}
                                         initialStatus="wishlist"
                                     />
