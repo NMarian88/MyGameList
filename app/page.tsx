@@ -8,7 +8,7 @@ import { Game } from '@/lib/types';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {useCollection} from "@/app/hooks/useCollection";
-
+import  AdBanner  from "./components/AdBanner"
 export default function HomePage() {
     const { addToCollection, toastMessage, isToastVisible } = useCollection();
     const[popularGames, setPopularGames] = useState<Game[]>([]);
@@ -62,6 +62,7 @@ export default function HomePage() {
                    <h1 className="text-4xl font-bold mb-4">
                        Discover And Track Your Favourite <span className="text-purple-400">Games</span>
                    </h1>
+                   <AdBanner/>
                    <p className="text-xl text-gray-300 max-w-3xl mx-auto font-semibold">
                        Browse thousands of games and add them to your personal collection
                    </p>
@@ -193,6 +194,7 @@ export default function HomePage() {
                                </div>
                            </div>
                        </div>
+
                        <div className="flex items-center space-x-4 justify-end">
                            <button onClick={PrevPage} disabled={currentPage === 1 || isLoading}
                                    className={`p-2 rounded-lg transition ${currentPage === 1 || isLoading ? `bg-gray-800 text-gray-600 cursor-not-allowed` : `bg-gray-800 hover:bg-gray-700`}`}>
@@ -205,6 +207,7 @@ export default function HomePage() {
                                    className={`p-2 rounded-lg transition ${isLoading ? `bg-gray-800 text-gray-600 cursor-not-allowed` : `bg-gray-800 hover:bg-gray-700`}`}>
                                <ArrowRight size={20}/>
                            </button>
+
                        </div>
                    </>
                )

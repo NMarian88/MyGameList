@@ -2,9 +2,30 @@
 
 import { useAuth } from '@clerk/nextjs';
 import Link from 'next/link';
+import { useEffect, useRef } from 'react'; // <-- 1. Import useRef
 
 export default function AdBanner() {
     const { isLoaded, has } = useAuth();
+
+    // 2. Create a memory tracker that starts as false
+    const adLoaded = useRef(false);
+
+    useEffect(() => {
+        if (process.env.NODE_ENV === 'development') return;
+        // 3. Only ask Google for an ad if we haven't asked already!
+        if (!adLoaded.current) {
+            try {
+                // @ts-ignore
+                (window.adsbygoogle = window.adsbygoogle || []).push({});
+
+                // 4. Mark it as true so it never fires again for this component
+                adLoaded.current = true;
+            } catch (err) {
+                console.error('AdSense error:', err);
+            }
+        }
+    }, []);
+
     if (!isLoaded) return null;
     const isPro = has({ plan: 'premium' });
     if (isPro) return null;
@@ -16,11 +37,23 @@ export default function AdBanner() {
                 <span className="text-[10px] text-slate-500 uppercase tracking-widest">Advertisement</span>
             </div>
 
-
-            <div className="w-full h-[90px] flex items-center justify-center bg-slate-800/50 rounded-lg border border-slate-700/50 mb-2">
-                <span className="text-slate-500">Ad Space (728x90)</span>
+            <div className="w-full flex justify-center mb-2 overflow-hidden min-h-[90px]">
+                {/* 5. Keep your Dev Hack so it looks good on localhost! */}
+                {process.env.NODE_ENV === 'development' ? (
+                    <div className="w-full max-w-[728px] h-[90px] bg-slate-800 flex items-center justify-center border border-dashed border-slate-600 rounded">
+                        <span className="text-slate-500 font-mono text-sm">AdSense Placeholder (728x90)</span>
+                    </div>
+                ) : (
+                    <ins
+                        className="adsbygoogle"
+                        style={{ display: 'block', width: '100%' }}
+                        data-ad-client="ca-pub-2023886611050610"
+                        data-ad-slot="8683274562"
+                        data-ad-format="auto"
+                        data-full-width-responsive="true"
+                    />
+                )}
             </div>
-
 
             <Link
                 href="/pricing"
