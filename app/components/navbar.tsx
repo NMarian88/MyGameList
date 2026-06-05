@@ -9,6 +9,7 @@ import { UserButton} from '@clerk/nextjs';
 import { Game } from '@/lib/types';
 import {User} from  '@/app/actions/user.actions';
 import {useCollection} from "@/app/hooks/useCollection";
+import PremiumBadge from './PremiumBadge';
 interface CommunityResult {
     id: string;
     name: string;
@@ -246,6 +247,7 @@ export default function NavBar() {
                                 Dashboard
                             </Link>
                             <UserButton />
+                            <PremiumBadge />
                         </div>
                     </div>
                 </div>

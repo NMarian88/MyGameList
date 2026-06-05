@@ -30,11 +30,16 @@ export default function RootLayout({
   return (
       <ClerkProvider>
         <html lang="en">
-          <body
+        <head>
+          <script async
+                  src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2023886611050610"
+                  crossOrigin="anonymous"></script>
+        </head>
+        <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-          >
-          <PostHogProvider>
-            <Suspense fallback={null}>
+        >
+        <PostHogProvider>
+          <Suspense fallback={null}>
               <PostHogPageView />
             </Suspense>
             {children}

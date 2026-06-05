@@ -4,10 +4,11 @@ import { useChat } from '@ai-sdk/react';
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Bot } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import Link from 'next/link';
 export default function AIWidget() {
     const [open, setOpen] = useState(false);
     const [input, setInput] = useState('');
-    const { messages, sendMessage, status } = useChat();
+    const { messages, sendMessage, status, error } = useChat();
     const bottomRef = useRef<HTMLDivElement>(null);
     const isLoading = status === 'submitted' || status === 'streaming';
     useEffect(() => {
@@ -95,7 +96,17 @@ export default function AIWidget() {
                         )}
                         <div ref={bottomRef} />
                     </div>
-
+                    {error && (
+                        <div className="bg-red-500/10 border border-red-500 text-red-500 p-4 mx-4 mb-4 rounded-xl text-sm flex flex-col gap-2 shadow-xl">
+                            <span className="font-bold">⚠️ Notice</span>
+                            <span>{error.message}</span>
+                            {error.message.includes('Upgrade') && (
+                                <Link href="/pricing" className="mt-2 bg-red-500 text-white py-2 px-4 rounded-lg text-center font-bold hover:bg-red-600 transition">
+                                    View Premium Plans
+                                </Link>
+                            )}
+                        </div>
+                    )}
                     {/* Input */}
                     <form
                         onSubmit={e => {

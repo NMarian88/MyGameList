@@ -51,10 +51,39 @@ async function buildLibraryContext(userId: string): Promise<string> {
 
 export async function POST(req: Request) {
     const { messages }: { messages: UIMessage[] } = await req.json();
-    const { userId } = await auth();
+    const { userId, has } = await auth();
     if(!userId) {
         return NextResponse.json({error: "Unauthorized"}, {status: 401});
     }
+    const isPro = has({ plan: 'premium' });
+    const MAX_CHATS = isPro ? 10 : 5;
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: usageData } = await supabaseServer
+        .from('user_ai_usage')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+    let currentCount = usageData?.chat_count || 0;
+    const lastDate = usageData?.last_chat_date;
+
+    if (lastDate !== today) {
+        currentCount = 0;
+    }
+
+    if (currentCount >= MAX_CHATS) {
+        return NextResponse.json(
+            { error: `Daily limit reached. ${isPro ? 'Check back tomorrow!' : 'Upgrade to Pro for more chats!'}` },
+            { status: 429 } // 429 means "Too Many Requests"
+        );
+    }
+    await supabaseServer
+        .from('user_ai_usage')
+        .upsert({
+            user_id: userId,
+            chat_count: currentCount + 1,
+            last_chat_date: today
+        });
 
     const libraryContext = await buildLibraryContext(userId);
 
