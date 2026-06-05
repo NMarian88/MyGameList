@@ -125,7 +125,7 @@ export default function SignInPage() {
                             routing="path"
                             path="/sign-in"
                             signUpUrl="/sign-up"
-                            redirectUrl="/"
+                            fallbackRedirectUrl="/"
                         />
                         <div className="mt-8 pt-6 border-t border-gray-800">
                             <div className="flex items-center justify-between text-sm text-gray-500">
