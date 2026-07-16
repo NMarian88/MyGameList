@@ -100,7 +100,7 @@ ${libraryContext}`,
             webSearch: {
                 description: 'Search the web for video game achievements, guides, and specific gaming facts.',
                 inputSchema: z.object({
-                    query: z.string().describe('The search query, e.g., "How to get Pacifist achievement in Hollow Knight"'),
+                    query: z.string().describe('The search query, ex., "How to get Pacifist achievement in Hollow Knight"'),
                 }),
                 execute: async ({ query }: { query: string }) => {
                     try {

@@ -1,6 +1,12 @@
 import { useState } from 'react';
+import posthog from 'posthog-js';
 import { getGameDetails } from '@/lib/rawg-api';
 import { Game } from '@/lib/types';
+
+export interface AddToCollectionOptions {
+    reviewScore?: number;
+    reviewText?: string;
+}
 
 export const useCollection = () => {
     const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -17,7 +23,11 @@ export const useCollection = () => {
     };
 
 
-    const addToCollection = async (game: Game, status: string = 'wishlist') => {
+    const addToCollection = async (
+        game: Game,
+        status: string = 'wishlist',
+        options: AddToCollectionOptions = {}
+    ) => {
         try {
             const fullGame = await getGameDetails(game.id);
 
@@ -51,16 +61,36 @@ export const useCollection = () => {
                 return;
             }
 
+            const hasReview =
+                options.reviewScore !== undefined || options.reviewText !== undefined;
 
             const userGameResponse = await fetch('/api/user/games', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ gameId: game.id, status }),
+                body: JSON.stringify({
+                    gameId: game.id,
+                    status,
+                    ...(status === 'completed' && { completedAt: new Date().toISOString() }),
+                    ...(hasReview && {
+                        reviews: [
+                            {
+                                reviewScore: options.reviewScore,
+                                reviewText: options.reviewText,
+                                reviewedAt: new Date().toISOString(),
+                            },
+                        ],
+                    }),
+                }),
             });
 
             if (userGameResponse.ok) {
                 console.log('Game added to collection!');
                 showToastMessage('Game added to collection!');
+                posthog.capture('game_added_to_collection', {
+                    game_id: game.id,
+                    game_name: game.name,
+                    status,
+                });
                 window.dispatchEvent(new CustomEvent('gameAdded'));
             } else {
                 console.log('Failed to link game');

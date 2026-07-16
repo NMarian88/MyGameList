@@ -121,6 +121,67 @@
     @apply bg-background text-foreground;
   }
 }
+/* ---- Clerk auth widgets: force dark styling ----
+   Targets Clerk's stable .cl-* classes with !important so the dark look wins
+   regardless of Clerk version or Tailwind specificity. Used by the sign-in /
+   sign-up pages, which render their own page heading over the widget. */
+.cl-cardBox,
+.cl-footer,
+.cl-main {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+/* Inner form card: a subtle panel so the form reads as a distinct rectangle */
+.cl-card {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid #1f2937 !important;
+  border-radius: 1rem !important;
+  box-shadow: none !important;
+}
+.cl-headerTitle,
+.cl-headerSubtitle {
+  display: none !important; /* we render our own "Sign in" / "Create account" heading */
+}
+.cl-formFieldLabel {
+  color: #d1d5db !important;
+}
+.cl-formFieldInput {
+  background-color: #1f2937 !important;
+  border: 1px solid #374151 !important;
+  color: #ffffff !important;
+}
+.cl-formFieldInput::placeholder {
+  color: #6b7280 !important;
+}
+.cl-dividerLine {
+  background-color: #374151 !important;
+}
+.cl-dividerText {
+  color: #9ca3af !important;
+}
+.cl-socialButtonsBlockButton {
+  background-color: #1f2937 !important;
+  border: 1px solid #374151 !important;
+  color: #ffffff !important;
+}
+.cl-socialButtonsBlockButton:hover {
+  background-color: #374151 !important;
+}
+.cl-socialButtonsBlockButton__google *,
+.cl-socialButtonsBlockButtonText {
+  color: #ffffff !important;
+}
+.cl-footerActionText,
+.cl-footer {
+  color: #9ca3af !important;
+}
+.cl-formHeaderTitle,
+.cl-otpCodeFieldInput {
+  color: #ffffff !important;
+}
+
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;

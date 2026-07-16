@@ -6,6 +6,7 @@ import Image from "next/image";
 import NavBar from '../../components/navbar';
 import { Calendar, Globe, Star, Clock, Users, Trophy, Gamepad2, ChevronRight, Play } from "lucide-react";
 import AddToCollectionButton from '../../components/AddToCollection';
+import GameViewTracker from '../../components/GameViewTracker';
 
 
 const getScoreColor = (score: number) => {
@@ -29,6 +30,7 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
 
         return (
             <div className="min-h-screen bg-[#0a0a0f] text-slate-100 overflow-x-hidden">
+                <GameViewTracker gameId={game.id} gameName={game.name} />
                 <NavBar />
 
 

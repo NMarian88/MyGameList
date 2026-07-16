@@ -2,23 +2,23 @@
 
 import { useAuth } from '@clerk/nextjs';
 import Link from 'next/link';
-import { useEffect, useRef } from 'react'; // <-- 1. Import useRef
+import { useEffect, useRef } from 'react';
 
 export default function AdBanner() {
     const { isLoaded, has } = useAuth();
 
-    // 2. Create a memory tracker that starts as false
+
     const adLoaded = useRef(false);
 
     useEffect(() => {
         if (process.env.NODE_ENV === 'development') return;
-        // 3. Only ask Google for an ad if we haven't asked already!
+
         if (!adLoaded.current) {
             try {
-                // @ts-ignore
+
                 (window.adsbygoogle = window.adsbygoogle || []).push({});
 
-                // 4. Mark it as true so it never fires again for this component
+
                 adLoaded.current = true;
             } catch (err) {
                 console.error('AdSense error:', err);
@@ -38,7 +38,7 @@ export default function AdBanner() {
             </div>
 
             <div className="w-full flex justify-center mb-2 overflow-hidden min-h-[90px]">
-                {/* 5. Keep your Dev Hack so it looks good on localhost! */}
+
                 {process.env.NODE_ENV === 'development' ? (
                     <div className="w-full max-w-[728px] h-[90px] bg-slate-800 flex items-center justify-center border border-dashed border-slate-600 rounded">
                         <span className="text-slate-500 font-mono text-sm">AdSense Placeholder (728x90)</span>

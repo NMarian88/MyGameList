@@ -8,6 +8,7 @@ import { Game } from '@/lib/types';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {useCollection} from "@/app/hooks/useCollection";
+import AddToCollectionModal, { CollectionSelection } from "./components/AddToCollectionModal";
 import  AdBanner  from "./components/AdBanner"
 export default function HomePage() {
     const { addToCollection, toastMessage, isToastVisible } = useCollection();
@@ -16,6 +17,8 @@ export default function HomePage() {
     const[selectedFilter, setSelectedFilter] = useState<'popular' | 'top-rated'>('popular');
     const[currentPage, setCurrentPage] = useState(1);
     const[isLoading, setIsLoading] = useState(false);
+    const[selectedGame, setSelectedGame] = useState<Game | null>(null);
+    const[isAdding, setIsAdding] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const {isLoaded, userId} = useAuth();
@@ -53,6 +56,19 @@ export default function HomePage() {
     }
     const displayedGames = selectedFilter === 'popular' ? popularGames : topRatedGames;
 
+    const handleConfirmAdd = async (selection: CollectionSelection) => {
+        if (!selectedGame) return;
+        setIsAdding(true);
+        try {
+            await addToCollection(selectedGame, selection.status, {
+                reviewScore: selection.reviewScore,
+                reviewText: selection.reviewText,
+            });
+            setSelectedGame(null);
+        } finally {
+            setIsAdding(false);
+        }
+    };
 
     return(
        <div className="min-h-screen bg-linear-to-b from-gray-900 to-black text-white">
@@ -141,7 +157,7 @@ export default function HomePage() {
                                                    <div
                                                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ">
                                                        <button
-                                                           onClick={(e) =>{ e.preventDefault(); void addToCollection(game)}}
+                                                           onClick={(e) =>{ e.preventDefault(); setSelectedGame(game);}}
                                                            className="absolute bottom-0 right-0 m-2 p-3 bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-full shadow-lg transition hover:scale-110">
                                                            <Plus size={20}/>
                                                        </button>
@@ -226,6 +242,13 @@ export default function HomePage() {
                    </div>
                </div>
            )}
+           <AddToCollectionModal
+               isOpen={selectedGame !== null}
+               gameName={selectedGame?.name ?? ''}
+               isSubmitting={isAdding}
+               onClose={() => setSelectedGame(null)}
+               onConfirm={handleConfirmAdd}
+           />
        </div>
     )
 

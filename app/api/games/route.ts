@@ -47,12 +47,8 @@ export async function GET(request: Request) {
             console.log('this came from the database')
             return NextResponse.json(formattedGame);
         }
-        
-
         try {
             const gameFromApi = await getGameDetails(isNumeric ? Number(identifier) : identifier);
-            
-
             const gameRecord = {
                 rawg_id: gameFromApi.id,
                 name: gameFromApi.name,
@@ -67,11 +63,9 @@ export async function GET(request: Request) {
                 background_image: gameFromApi.background_image,
                 metadata: gameFromApi
             };
-            
             const { error: upsertError } = await supabaseServer
                 .from('games')
                 .upsert(gameRecord, { onConflict: 'id' });
-            
             if (upsertError) {
                 console.warn("Could not save game to database:", upsertError);
             }

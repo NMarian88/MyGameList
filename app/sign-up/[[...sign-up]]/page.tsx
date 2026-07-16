@@ -92,7 +92,7 @@ export default function SignUpPage() {
                         </Link>
                     </div>
 
-                    <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-800 p-8 shadow-2xl shadow-purple-900/20 flex flex-col items-center justify-center">
+                    <div className="bg-gray-900/90 backdrop-blur-xl rounded-2xl border border-gray-700/70 p-8 shadow-2xl shadow-purple-900/20 flex flex-col items-center justify-center">
                         <div className="text-center mb-8">
                             <div className="inline-flex items-center justify-center w-16 h-16 bg-linear-to-br from-blue-900 to-purple-900 rounded-2xl mb-4 border border-blue-700/50">
                                 <Gamepad2 size={28} />
@@ -106,31 +106,16 @@ export default function SignUpPage() {
                                 elements: {
                                     rootBox: "w-full",
                                     card: "bg-transparent shadow-none p-0",
-                                    headerTitle: "hidden",
-                                    headerSubtitle: "hidden",
-                                    socialButtonsBlockButton:
-                                        "bg-gray-800 border-gray-700 hover:bg-gray-700 text-white",
-                                    formFieldLabel: "mb-2",
-                                    formFieldInput:
-                                        "bg-gray-800 border-gray-700 text-white placeholder-gray-500 " +
-                                        "focus:ring-2 focus:ring-purple-500 focus:border-transparent " +
-                                        "rounded-lg transition",
                                     formButtonPrimary:
-                                        "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 " +
-                                        "text-white font-semibold py-3 rounded-lg transition-all " +
+                                        "bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 " +
+                                        "text-white font-semibold py-3 rounded-lg transition-all normal-case " +
                                         "shadow-lg shadow-purple-900/30 hover:shadow-purple-900/50",
                                     footerActionLink:
                                         "text-purple-400 hover:text-purple-300 font-medium",
-                                    footer: "border-t border-gray-800 pt-6",
                                 },
                                 variables: {
                                     colorPrimary: "#8B5CF6",
-                                    colorText: "#ffffff",
-                                    colorTextSecondary: "#9CA3AF",
-                                    colorBackground: "#111827",
-                                    colorInputBackground: "#1F2937",
-                                    colorInputText: "#ffffff",
-                                    colorNeutral: "#ffffff",
+                                    borderRadius: "0.5rem",
                                 }
                             }}
                             routing="path"

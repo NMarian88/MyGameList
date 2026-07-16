@@ -10,8 +10,6 @@ export default function PricingPage() {
                     Upgrade to Premium
                 </h1>
                 <p className="text-slate-400 mb-12">Unlock advanced gaming analytics and an ad-free experience.</p>
-
-                {/* This single component renders your plans and handles Stripe checkouts! */}
                 <div className="w-full max-w-4xl">
                     <PricingTable />
                 </div>

@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect,useRef } from 'react';
+import posthog from 'posthog-js';
 import {searchGames} from '@/lib/rawg-api';
 import {searchUsers} from "@/app/actions/user.actions";
 import Link from 'next/link';
@@ -9,6 +10,7 @@ import { UserButton} from '@clerk/nextjs';
 import { Game } from '@/lib/types';
 import {User} from  '@/app/actions/user.actions';
 import {useCollection} from "@/app/hooks/useCollection";
+import AddToCollectionModal, { CollectionSelection } from "./AddToCollectionModal";
 import PremiumBadge from './PremiumBadge';
 interface CommunityResult {
     id: string;
@@ -25,6 +27,8 @@ export default function NavBar() {
     const[searchResult, setSearchResult] = useState<Game[] | User[] | CommunityResult[]>([]);
     const[isSearching, setIsSearching] = useState(false);
     const[showSearch, setShowSearch] = useState(false);
+    const[selectedGame, setSelectedGame] = useState<Game | null>(null);
+    const[isAdding, setIsAdding] = useState(false);
     const searchTimeoutRef = useRef<NodeJS.Timeout>(null);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -46,6 +50,10 @@ export default function NavBar() {
                 if (searchType === 'games') {
                     const gameData = await searchGames(searchQuery);
                     setSearchResult(gameData.results.slice(0, 5));
+                    posthog.capture('game_searched', {
+                        query: searchQuery,
+                        results_count: gameData.results.length,
+                    });
                 } else if (searchType === 'users') {
                     const userData = await searchUsers(searchQuery);
                     setSearchResult(userData.slice(0, 5));
@@ -81,7 +89,19 @@ export default function NavBar() {
             document.removeEventListener('mousedown', HandleClick);
         };
     }, []);
-
+    const handleConfirmAdd = async (selection: CollectionSelection) => {
+        if (!selectedGame) return;
+        setIsAdding(true);
+        try {
+            await addToCollection(selectedGame, selection.status, {
+                reviewScore: selection.reviewScore,
+                reviewText: selection.reviewText,
+            });
+            setSelectedGame(null);
+        } finally {
+            setIsAdding(false);
+        }
+    };
 
    return(
        <div>
@@ -192,7 +212,7 @@ export default function NavBar() {
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            <button onClick={(e) =>{ e.preventDefault(); void addToCollection(game) }} className="p-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition opacity-0 group-hover:opacity-100" title="Add to collection">
+                                                            <button onClick={(e) =>{ e.preventDefault(); setSelectedGame(game); }} className="p-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition opacity-0 group-hover:opacity-100" title="Add to collection">
                                                                 <Plus size={20}></Plus>
                                                             </button>
                                                         </div>
@@ -261,6 +281,13 @@ export default function NavBar() {
                     </div>
                 </div>
             )}
+           <AddToCollectionModal
+               isOpen={selectedGame !== null}
+               gameName={selectedGame?.name ?? ''}
+               isSubmitting={isAdding}
+               onClose={() => setSelectedGame(null)}
+               onConfirm={handleConfirmAdd}
+           />
        </div>
    )
 }

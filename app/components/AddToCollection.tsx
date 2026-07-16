@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import AddToCollectionModal, { CollectionSelection } from './AddToCollectionModal';
 
 interface AddToCollectionButtonProps {
     game: any;
@@ -14,21 +15,23 @@ interface AddToCollectionButtonProps {
 export default function AddToCollectionButton({
                                                   game,
                                                   userId,
-                                                  initialStatus = 'wishlist'
                                               }: AddToCollectionButtonProps) {
     const [isAdding, setIsAdding] = useState(false);
     const [isAdded, setIsAdded] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const router = useRouter();
 
-    const handleAdd = async () => {
+    const handleOpen = () => {
         if (!userId) {
             router.push('/sign-in');
             return;
         }
+        setIsModalOpen(true);
+    };
 
+    const handleConfirm = async (selection: CollectionSelection) => {
         setIsAdding(true);
         try {
-
             const gameResponse = await fetch('/api/games', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -52,18 +55,32 @@ export default function AddToCollectionButton({
                 }),
             });
 
-
             if (!gameResponse.ok && gameResponse.status !== 409) {
                 console.error('Failed to process game details.');
             }
 
+
+            const hasReview =
+                selection.reviewScore !== undefined || selection.reviewText !== undefined;
 
             const userGameResponse = await fetch('/api/user/games', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     gameId: game.id,
-                    status: initialStatus
+                    status: selection.status,
+                    ...(selection.status === 'completed' && {
+                        completedAt: new Date().toISOString(),
+                    }),
+                    ...(hasReview && {
+                        reviews: [
+                            {
+                                reviewScore: selection.reviewScore,
+                                reviewText: selection.reviewText,
+                                reviewedAt: new Date().toISOString(),
+                            },
+                        ],
+                    }),
                 }),
             });
 
@@ -73,6 +90,7 @@ export default function AddToCollectionButton({
                 console.error(data.message || 'Failed to add game to collection.');
             }
 
+            setIsModalOpen(false);
             setIsAdded(true);
             toast.success(`"${game.name}" added to your collection!`);
 
@@ -88,23 +106,33 @@ export default function AddToCollectionButton({
     };
 
     return (
-        <button
-            onClick={handleAdd}
-            disabled={isAdding}
-            className={`px-8 py-4 w-fit rounded-xl font-bold text-lg transition-all transform hover:scale-105 flex items-center gap-3 ${
-                isAdded
-                    ? 'bg-green-600 hover:bg-green-700'
-                    : 'bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
-            }`}
-        >
-            {isAdding ? (
-                <Loader2 className="animate-spin" size={24} />
-            ) : isAdded ? (
-                <Check size={24} />
-            ) : (
-                <Plus size={24} />
-            )}
-            {isAdding ? 'Adding...' : isAdded ? 'Added!' : 'Add to Collection'}
-        </button>
+        <>
+            <button
+                onClick={handleOpen}
+                disabled={isAdding}
+                className={`px-8 py-4 w-fit rounded-xl font-bold text-lg transition-all transform hover:scale-105 flex items-center gap-3 ${
+                    isAdded
+                        ? 'bg-green-600 hover:bg-green-700'
+                        : 'bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
+                }`}
+            >
+                {isAdding ? (
+                    <Loader2 className="animate-spin" size={24} />
+                ) : isAdded ? (
+                    <Check size={24} />
+                ) : (
+                    <Plus size={24} />
+                )}
+                {isAdding ? 'Adding...' : isAdded ? 'Added!' : 'Add to Collection'}
+            </button>
+
+            <AddToCollectionModal
+                isOpen={isModalOpen}
+                gameName={game.name}
+                isSubmitting={isAdding}
+                onClose={() => setIsModalOpen(false)}
+                onConfirm={handleConfirm}
+            />
+        </>
     );
 }
