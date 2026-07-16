@@ -4,6 +4,12 @@ import { useAuth } from '@clerk/nextjs';
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 
+declare global {
+    interface Window {
+        adsbygoogle: Record<string, unknown>[];
+    }
+}
+
 export default function AdBanner() {
     const { isLoaded, has } = useAuth();
 
