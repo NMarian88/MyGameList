@@ -28,6 +28,8 @@ export default function ViewToggle({ viewMode, setViewMode }: Props) {
       >
         <List className="w-4 h-4" />
       </button>
+
+
     </div>
   );
 }

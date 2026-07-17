@@ -18,10 +18,7 @@ interface Props {
   onClick?: () => void;
 }
 
-/**
- * Formats platforms with priority ordering:
- * PC -> newest PlayStation -> newest Xbox -> newest Nintendo -> others
- */
+
 function formatPlatforms(platforms?: string, maxCount: number = 3): string {
   if (!platforms) return '';
   

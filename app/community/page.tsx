@@ -86,6 +86,7 @@ export default function CommunityHubPage() {
                 </div>
 
                 <div className="flex items-center gap-4 mb-8 flex-wrap">
+
                     <div className="relative flex-1 min-w-64">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                         <input

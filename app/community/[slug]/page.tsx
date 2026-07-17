@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import NavBar from '@/app/components/navbar';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Users, Lock, Globe, Plus, MessageSquare, ArrowLeft, Bell, Check, X } from 'lucide-react';
+import { Users, Lock, Globe, Plus, MessageSquare, ArrowLeft, Bell, Check, X, Trash2, Ban, UserMinus, RotateCcw, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
 import Image from 'next/image';
 
@@ -38,6 +38,14 @@ interface JoinRequest {
     requestedAt: string;
 }
 
+interface Member {
+    userId: string;
+    username: string;
+    imageUrl: string | null;
+    role: string;
+    joinedAt: string;
+}
+
 export default function CommunityPage() {
     const { slug } = useParams<{ slug: string }>();
     const { userId } = useAuth();
@@ -53,6 +61,11 @@ export default function CommunityPage() {
     const [threadError, setThreadError] = useState<string | null>(null);
     const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
     const [showRequests, setShowRequests] = useState(false);
+    const [members, setMembers] = useState<Member[]>([]);
+    const [bannedMembers, setBannedMembers] = useState<Member[]>([]);
+    const [showMembers, setShowMembers] = useState(false);
+
+    const isOwner = !!community && community.created_by === userId;
 
     useEffect(() => {
         if (!slug) return;
@@ -61,10 +74,11 @@ export default function CommunityPage() {
     }, [slug]);
 
     useEffect(() => {
-        if (membership?.role === 'owner') {
+        if (isOwner) {
             fetchJoinRequests();
+            fetchMembers();
         }
-    }, [membership]);
+    }, [isOwner]);
 
     const fetchCommunity = async () => {
         try {
@@ -96,7 +110,54 @@ export default function CommunityPage() {
             body: JSON.stringify({ user_id: targetUserId, action }),
         });
         setJoinRequests(rs => rs.filter(r => r.userId !== targetUserId));
-        if (action === 'approve') setMemberCount(c => c + 1);
+        if (action === 'approve') {
+            setMemberCount(c => c + 1);
+            fetchMembers();
+        }
+    };
+
+    const fetchMembers = async () => {
+        try {
+            const res = await fetch(`/api/community/${slug}/members?type=members`);
+            if (res.ok) {
+                const data = await res.json();
+                setMembers(data.members || []);
+                setBannedMembers(data.banned || []);
+            }
+        } catch {}
+    };
+
+    const handleModerate = async (targetUserId: string, action: 'kick' | 'ban' | 'unban') => {
+        const res = await fetch(`/api/community/${slug}/members`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: targetUserId, action }),
+        });
+        if (!res.ok) return;
+
+        if (action === 'kick') {
+            setMembers(ms => ms.filter(m => m.userId !== targetUserId));
+            setMemberCount(c => Math.max(0, c - 1));
+        } else if (action === 'ban') {
+            const banned = members.find(m => m.userId === targetUserId);
+            setMembers(ms => ms.filter(m => m.userId !== targetUserId));
+            if (banned) {
+                setBannedMembers(bs =>
+                    bs.some(b => b.userId === targetUserId) ? bs : [...bs, banned]
+                );
+            }
+            setMemberCount(c => Math.max(0, c - 1));
+        } else if (action === 'unban') {
+            setBannedMembers(bs => bs.filter(m => m.userId !== targetUserId));
+        }
+    };
+
+    const handleDeleteThread = async (threadId: string) => {
+        if (!confirm('Delete this thread? This cannot be undone.')) return;
+        const res = await fetch(`/api/community/${slug}/threads/${threadId}`, { method: 'DELETE' });
+        if (res.ok) {
+            setThreads(ts => ts.filter(t => t.id !== threadId));
+        }
     };
 
     const fetchThreads = async () => {
@@ -300,6 +361,107 @@ export default function CommunityPage() {
                     </div>
                 )}
 
+                {/* Member Management — owner only */}
+                {isOwner && (
+                    <div className="bg-gray-800 border border-gray-700 rounded-2xl mb-8 overflow-hidden">
+                        <button
+                            onClick={() => setShowMembers(v => !v)}
+                            className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-750 transition"
+                        >
+                            <div className="flex items-center gap-3">
+                                <ShieldCheck size={18} className="text-purple-400" />
+                                <span className="font-semibold">Manage Members</span>
+                                <span className="px-2 py-0.5 bg-gray-700 rounded-full text-xs font-bold">
+                                    {members.length}
+                                </span>
+                                {bannedMembers.length > 0 && (
+                                    <span className="px-2 py-0.5 bg-red-900/60 border border-red-800 text-red-300 rounded-full text-xs font-bold">
+                                        {bannedMembers.length} banned
+                                    </span>
+                                )}
+                            </div>
+                            <span className="text-gray-500 text-sm">{showMembers ? 'Hide' : 'Show'}</span>
+                        </button>
+                        {showMembers && (
+                            <div className="border-t border-gray-700">
+                                {members.map((m) => (
+                                    <div key={m.userId} className="flex items-center justify-between px-6 py-3 border-b border-gray-700 last:border-b-0">
+                                        <div className="flex items-center gap-3">
+                                            {m.imageUrl ? (
+                                                <Image src={m.imageUrl} alt={m.username} width={36} height={36} className="rounded-full" />
+                                            ) : (
+                                                <div className="w-9 h-9 rounded-full bg-gray-600 flex items-center justify-center text-sm font-bold">
+                                                    {m.username[0]?.toUpperCase()}
+                                                </div>
+                                            )}
+                                            <div>
+                                                <p className="font-semibold text-sm flex items-center gap-2">
+                                                    {m.username}
+                                                    {m.role === 'owner' && (
+                                                        <span className="px-2 py-0.5 bg-purple-900/50 border border-purple-700 rounded-full text-purple-400 text-[10px] font-semibold">
+                                                            Owner
+                                                        </span>
+                                                    )}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    Joined {new Date(m.joinedAt).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {m.role !== 'owner' && (
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => handleModerate(m.userId, 'kick')}
+                                                    className="flex items-center gap-1 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg transition text-sm font-semibold"
+                                                    title="Remove from community (can rejoin)"
+                                                >
+                                                    <UserMinus size={14} /> Kick
+                                                </button>
+                                                <button
+                                                    onClick={() => handleModerate(m.userId, 'ban')}
+                                                    className="flex items-center gap-1 px-3 py-1.5 bg-red-900/60 hover:bg-red-700 text-red-200 rounded-lg transition text-sm font-semibold"
+                                                    title="Ban from community (cannot rejoin)"
+                                                >
+                                                    <Ban size={14} /> Ban
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+
+                                {bannedMembers.length > 0 && (
+                                    <div className="px-6 py-3 bg-gray-900/40">
+                                        <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">Banned</p>
+                                        <div className="space-y-2">
+                                            {bannedMembers.map((m) => (
+                                                <div key={m.userId} className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        {m.imageUrl ? (
+                                                            <Image src={m.imageUrl} alt={m.username} width={28} height={28} className="rounded-full grayscale" />
+                                                        ) : (
+                                                            <div className="w-7 h-7 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold">
+                                                                {m.username[0]?.toUpperCase()}
+                                                            </div>
+                                                        )}
+                                                        <span className="text-sm text-gray-400">{m.username}</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleModerate(m.userId, 'unban')}
+                                                        className="flex items-center gap-1 px-3 py-1.5 bg-gray-700 hover:bg-green-700 rounded-lg transition text-sm font-semibold"
+                                                        title="Lift the ban"
+                                                    >
+                                                        <RotateCcw size={14} /> Unban
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Threads Section */}
                 <div className="flex items-center justify-between mb-5">
                     <h2 className="text-xl font-bold">Threads</h2>
@@ -321,28 +483,39 @@ export default function CommunityPage() {
                 ) : (
                     <div className="space-y-3">
                         {threads.map((thread) => (
-                            <Link key={thread.id} href={`/community/${slug}/thread/${thread.id}`}>
-                                <div className="bg-gray-800 border border-gray-700 rounded-xl p-5 hover:border-purple-500 transition cursor-pointer">
-                                    <h3 className="font-semibold text-lg mb-1">{thread.title}</h3>
-                                    <p className="text-gray-400 text-sm line-clamp-2 mb-3">{thread.content}</p>
-                                    <div className="flex items-center gap-3 text-xs text-gray-500">
-                                        {thread.author_image ? (
-                                            <Image
-                                                src={thread.author_image}
-                                                alt={thread.author_name}
-                                                width={20}
-                                                height={20}
-                                                className="rounded-full"
-                                            />
-                                        ) : (
-                                            <div className="w-5 h-5 rounded-full bg-gray-600" />
-                                        )}
-                                        <span>{thread.author_name}</span>
-                                        <span>·</span>
-                                        <span>{new Date(thread.created_at).toLocaleDateString()}</span>
+                            <div key={thread.id} className="relative group">
+                                <Link href={`/community/${slug}/thread/${thread.id}`}>
+                                    <div className="bg-gray-800 border border-gray-700 rounded-xl p-5 hover:border-purple-500 transition cursor-pointer">
+                                        <h3 className="font-semibold text-lg mb-1 pr-8">{thread.title}</h3>
+                                        <p className="text-gray-400 text-sm line-clamp-2 mb-3">{thread.content}</p>
+                                        <div className="flex items-center gap-3 text-xs text-gray-500">
+                                            {thread.author_image ? (
+                                                <Image
+                                                    src={thread.author_image}
+                                                    alt={thread.author_name}
+                                                    width={20}
+                                                    height={20}
+                                                    className="rounded-full"
+                                                />
+                                            ) : (
+                                                <div className="w-5 h-5 rounded-full bg-gray-600" />
+                                            )}
+                                            <span>{thread.author_name}</span>
+                                            <span>·</span>
+                                            <span>{new Date(thread.created_at).toLocaleDateString()}</span>
+                                        </div>
                                     </div>
-                                </div>
-                            </Link>
+                                </Link>
+                                {(isOwner || thread.user_id === userId) && (
+                                    <button
+                                        onClick={() => handleDeleteThread(thread.id)}
+                                        className="absolute top-4 right-4 p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-900/30 rounded-lg transition opacity-0 group-hover:opacity-100"
+                                        title="Delete thread"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
+                            </div>
                         ))}
                     </div>
                 )}

@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react';
 import NavBar from '@/app/components/navbar';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { ArrowLeft, MessageSquare, CornerDownRight } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft, MessageSquare, CornerDownRight, Trash2 } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
 import Image from 'next/image';
 
@@ -11,6 +11,7 @@ interface Thread {
     id: string;
     title: string;
     content: string;
+    user_id: string;
     author_name: string;
     author_image: string | null;
     created_at: string;
@@ -44,16 +45,19 @@ interface CommentItemProps {
     comment: Comment;
     allComments: Comment[];
     userId: string | null | undefined;
+    isOwner: boolean;
     isSubmitting: boolean;
     onSubmit: (content: string, parentId: string) => Promise<void>;
+    onDelete: (commentId: string) => Promise<void>;
     depth: number;
 }
 
-function CommentItem({ comment, allComments, userId, isSubmitting, onSubmit, depth }: CommentItemProps) {
+function CommentItem({ comment, allComments, userId, isOwner, isSubmitting, onSubmit, onDelete, depth }: CommentItemProps) {
     const [isReplying, setIsReplying] = useState(false);
     const [replyText, setReplyText] = useState('');
     const replies = allComments.filter(c => c.parent_comment_id === comment.id);
     const MAX_INDENT = 4;
+    const canDelete = isOwner || comment.user_id === userId;
 
     const handleReply = async () => {
         if (!replyText.trim()) return;
@@ -69,6 +73,15 @@ function CommentItem({ comment, allComments, userId, isSubmitting, onSubmit, dep
                     <AuthorAvatar image={comment.author_image} name={comment.author_name} size={depth === 0 ? 24 : 20} />
                     <span className="font-semibold text-sm">{comment.author_name}</span>
                     <span className="text-gray-500 text-xs">{new Date(comment.created_at).toLocaleDateString()}</span>
+                    {canDelete && (
+                        <button
+                            onClick={() => onDelete(comment.id)}
+                            className="ml-auto p-1 text-gray-500 hover:text-red-400 hover:bg-red-900/30 rounded transition"
+                            title="Delete comment"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                    )}
                 </div>
                 <p className="text-gray-300 text-sm leading-relaxed">{comment.content}</p>
                 {userId && (
@@ -115,8 +128,10 @@ function CommentItem({ comment, allComments, userId, isSubmitting, onSubmit, dep
                             comment={reply}
                             allComments={allComments}
                             userId={userId}
+                            isOwner={isOwner}
                             isSubmitting={isSubmitting}
                             onSubmit={onSubmit}
+                            onDelete={onDelete}
                             depth={depth + 1}
                         />
                     ))}
@@ -129,16 +144,19 @@ function CommentItem({ comment, allComments, userId, isSubmitting, onSubmit, dep
 export default function ThreadPage() {
     const { slug, id } = useParams<{ slug: string; id: string }>();
     const { userId } = useAuth();
+    const router = useRouter();
     const [thread, setThread] = useState<Thread | null>(null);
     const [comments, setComments] = useState<Comment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [commentText, setCommentText] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isOwner, setIsOwner] = useState(false);
 
     useEffect(() => {
         if (!id || !slug) return;
         fetchThread();
-    }, [id, slug]);
+        fetchCommunity();
+    }, [id, slug, userId]);
 
     const fetchThread = async () => {
         try {
@@ -149,6 +167,45 @@ export default function ThreadPage() {
             setComments(data.comments);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const fetchCommunity = async () => {
+        try {
+            const res = await fetch(`/api/community/${slug}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            setIsOwner(!!userId && data.community?.created_by === userId);
+        } catch {}
+    };
+
+    const handleDeleteThread = async () => {
+        if (!confirm('Delete this thread? This cannot be undone.')) return;
+        const res = await fetch(`/api/community/${slug}/threads/${id}`, { method: 'DELETE' });
+        if (res.ok) router.push(`/community/${slug}`);
+    };
+
+    const handleDeleteComment = async (commentId: string) => {
+        if (!confirm('Delete this comment?')) return;
+        const res = await fetch(`/api/community/${slug}/threads/${id}/comments/${commentId}`, {
+            method: 'DELETE',
+        });
+        if (res.ok) {
+            // Drop the comment and any of its (cascade-deleted) descendants from the UI.
+            setComments(cs => {
+                const removed = new Set<string>([commentId]);
+                let changed = true;
+                while (changed) {
+                    changed = false;
+                    for (const c of cs) {
+                        if (c.parent_comment_id && removed.has(c.parent_comment_id) && !removed.has(c.id)) {
+                            removed.add(c.id);
+                            changed = true;
+                        }
+                    }
+                }
+                return cs.filter(c => !removed.has(c.id));
+            });
         }
     };
 
@@ -206,7 +263,18 @@ export default function ThreadPage() {
 
                 {/* Thread Post */}
                 <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 mb-6">
-                    <h1 className="text-2xl font-bold mb-4">{thread.title}</h1>
+                    <div className="flex items-start justify-between gap-4">
+                        <h1 className="text-2xl font-bold mb-4">{thread.title}</h1>
+                        {(isOwner || thread.user_id === userId) && (
+                            <button
+                                onClick={handleDeleteThread}
+                                className="flex items-center gap-1 shrink-0 px-3 py-1.5 text-sm text-gray-400 hover:text-red-400 hover:bg-red-900/30 rounded-lg transition"
+                                title="Delete thread"
+                            >
+                                <Trash2 size={16} /> Delete
+                            </button>
+                        )}
+                    </div>
                     <p className="text-gray-300 whitespace-pre-wrap leading-relaxed mb-6">{thread.content}</p>
                     <div className="flex items-center gap-3 text-sm text-gray-500 pt-4 border-t border-gray-700">
                         <AuthorAvatar image={thread.author_image} name={thread.author_name} size={24} />
@@ -264,8 +332,10 @@ export default function ThreadPage() {
                                 comment={comment}
                                 allComments={comments}
                                 userId={userId}
+                                isOwner={isOwner}
                                 isSubmitting={isSubmitting}
                                 onSubmit={submitComment}
+                                onDelete={handleDeleteComment}
                                 depth={0}
                             />
                         ))

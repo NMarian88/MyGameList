@@ -26,6 +26,10 @@ export async function POST(
         .eq('user_id', userId)
         .maybeSingle();
 
+    if (existing?.status === 'banned') {
+        return NextResponse.json({ error: 'You are banned from this community' }, { status: 403 });
+    }
+
     if (existing) {
         return NextResponse.json({ error: 'Already a member or request pending' }, { status: 409 });
     }
